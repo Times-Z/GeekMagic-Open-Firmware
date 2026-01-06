@@ -38,7 +38,7 @@
 
 ## Teardown
 
-> Version i've bought : https://fr.aliexpress.com/item/1005007793281982.html
+> Version i've bought : https://a.aliexpress.com/_EH3UQ0u
 > Maybe hardware is different with others vendor, but original firmware work on my version so...
 
 - **MCU**: ESP8266
