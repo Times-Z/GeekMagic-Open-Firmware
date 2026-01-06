@@ -5,8 +5,9 @@ This firmware was originally intended solely for hardware debugging/testing; it 
 
 ## Prerequisites
 
-- Install Arduino CLI if your not using devcontainer : https://arduino.github.io/arduino-cli/latest/installation/
-- Install ESP8266 core and libraries
+-   Install Arduino CLI if your not using devcontainer : https://arduino.github.io/arduino-cli/latest/installation/
+-   Install ESP8266 core and libraries
+
     ```bash
     arduino-cli core update-index
     arduino-cli config init
@@ -23,6 +24,7 @@ This firmware was originally intended solely for hardware debugging/testing; it 
 If you want to connect direcly on the webui from your others devices
 
 See [ota_secure.ino#L13](ota_secure/ota_secure.ino#L13) for where to set your WiFi credentials
+
 ```C
 const char *DEFAULT_SSID = "MyWifiSSID";
 const char *DEFAULT_PASSWORD = "My$tr0ngPassw0rd";

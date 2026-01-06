@@ -38,3 +38,5 @@ idf.py*
 *.bak
 
 !backup/*.bin
+
+.pio/

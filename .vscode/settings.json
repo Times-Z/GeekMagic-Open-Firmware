@@ -1,0 +1,25 @@
+{
+    "files.associations": {
+        "*plays.yml": "ansible",
+        "*init.yml": "yaml",
+        "*.h": "c",
+        "format": "c",
+        "thread": "c",
+        "chrono": "c",
+        "*.obj": "c",
+        "functional": "c",
+        "system_error": "c"
+    },
+    "C_Cpp.errorSquiggles": "enabled",
+    "C_Cpp.clang_format_fallbackStyle": "Google",
+    "C_Cpp.clang_format_style": "{ BasedOnStyle: Google, IndentWidth: 4, ColumnLimit: 120, IncludeBlocks: Preserve, SortIncludes: false }",
+    "C_Cpp.intelliSenseEngine": "default",
+    "C_Cpp.default.compilerPath": "/usr/bin/gcc",
+    "C_Cpp.default.intelliSenseMode": "gcc-x64",
+    "C_Cpp.default.cppStandard": "c++17",
+    "C_Cpp.default.cStandard": "gnu17",
+    "C_Cpp.vcpkg.enabled": false,
+    "cmake.configureOnOpen": true,
+    "cmake.clearOutputBeforeBuild": false,
+    "editor.formatOnSave": true
+}
