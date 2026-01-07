@@ -1,6 +1,7 @@
 #include <Arduino.h>
 #include <LittleFS.h>
 
+#include "../lib/Logger/Logger.h"  // Maybe use a better path here if possible
 #include "config/ConfigManager.h"
 #include "wireless/WiFiManager.h"
 
@@ -17,15 +18,15 @@ void setup() {
     Serial.begin(115200);
     delay(200);
     Serial.println("");
-    Serial.println("HelloCubic Lite Open Firmware");
+    Logger::info("HelloCubic Lite Open Firmware");
 
     if (!LittleFS.begin()) {
-        Serial.println("Failed to mount LittleFS");
+        Logger::error("Failed to mount LittleFS");
         return;
     }
 
     if (configManager.load()) {
-        Serial.println("Loaded WiFi config from config.json");
+        Logger::info("Configuration loaded successfully");
     }
 
     wifiManager = new WiFiManager(configManager.getSSID(), configManager.getPassword(), AP_SSID, AP_PASSWORD);

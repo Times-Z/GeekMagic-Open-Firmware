@@ -1,7 +1,8 @@
-#include "config/ConfigManager.h"
-
 #include <ArduinoJson.h>
 #include <LittleFS.h>
+
+#include "../lib/Logger/Logger.h"  // Maybe use a better path here if possible
+#include "config/ConfigManager.h"
 
 ConfigManager::ConfigManager(const char* filename) : filename(filename) {}
 
@@ -12,19 +13,19 @@ ConfigManager::ConfigManager(const char* filename) : filename(filename) {}
  */
 bool ConfigManager::load() {
     if (!LittleFS.begin()) {
-        Serial.println("Failed to mount LittleFS");
+        Logger::error("Failed to mount LittleFS");
         return false;
     }
 
     File file = LittleFS.open(filename.c_str(), "r");
     if (!file) {
-        Serial.println("Failed to open config file");
+        Logger::error("Failed to open config file");
         return false;
     }
 
     size_t size = file.size();
     if (size == 0) {
-        Serial.println("Config file is empty");
+        Logger::warn("Config file is empty");
         file.close();
         return false;
     }
@@ -37,8 +38,7 @@ bool ConfigManager::load() {
     JsonDocument doc;
     DeserializationError error = deserializeJson(doc, buf.get());
     if (error) {
-        Serial.print("Failed to parse config: ");
-        Serial.println(error.c_str());
+        Logger::error(("Failed to parse config file : " + String(error.c_str())).c_str());
         return false;
     }
 

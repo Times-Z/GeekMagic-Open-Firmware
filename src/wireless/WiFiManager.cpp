@@ -1,3 +1,4 @@
+#include "../lib/Logger/Logger.h"  // Maybe use a better path here if possible
 #include "wireless/WiFiManager.h"
 
 /**
@@ -16,10 +17,10 @@ void WiFiManager::begin() {
         WiFiManager::startAccessPointMode();
     }
 
-    Serial.println("Wifi active");
-    Serial.println("Mode : " + String(_apMode ? "AP" : "STA"));
-    Serial.println("SSID : " + String(_apMode ? _apSsid : _staSsid));
-    Serial.println("IP   : " + WiFiManager::getIP().toString());
+    Logger::info("Wifi active");
+    Logger::info(String("Mode : " + String(_apMode ? "AP" : "STA")).c_str());
+    Logger::info(String("SSID : " + String(_apMode ? _apSsid : _staSsid)).c_str());
+    Logger::info(String("IP   : " + WiFiManager::getIP().toString()).c_str());
 }
 
 /**
@@ -32,13 +33,12 @@ bool WiFiManager::startStationMode() {
     WiFi.begin(_staSsid, _staPass);
     int attempts = 0;
 
+    Logger::info("Connecting to WiFi...");
+
     while (WiFi.status() != WL_CONNECTED && attempts < 20) {
         delay(500);
-        Serial.print(".");
         attempts++;
     }
-
-    Serial.println("");
 
     if (WiFi.status() == WL_CONNECTED) {
         _apMode = false;
