@@ -1,8 +1,8 @@
 #include <Arduino.h>
 #include <LittleFS.h>
 
-#include "ConfigManager.h"
-#include "WiFiManager.h"
+#include "config/ConfigManager.h"
+#include "wireless/WiFiManager.h"
 
 ConfigManager configManager;
 const char* AP_SSID = "HelloCubicLite";
