@@ -11,73 +11,26 @@ permissions:
   pull-requests: write
 
 jobs:
-  lint:
-    name: Lint C++
-    runs-on: ubuntu-latest
-    steps:
-      - name: Checkout code
-        uses: actions/checkout@v4
-
-      - name: Install clang-tidy
-        run: sudo apt-get update && sudo apt-get install -y clang-tidy
-
-      - name: Set up Python
-        uses: actions/setup-python@v5
-        with:
-          python-version: "3.x"
-
-      - name: Install compatible click
-        run: pip install 'click<8.1.0' # prevent conflicts with PlatformIO
-
-      - name: Install PlatformIO
-        run: pip install platformio
-
-      - name: Generate compile_commands.json with PlatformIO
-        run: pio run -t compiledb || true
-
-      - name: Find compile_commands.json path
-        id: compiledb-path
-        run: |
-          db_path=$(find .pio/build -name compile_commands.json | head -n 1)
-          echo "path=$db_path" >> $GITHUB_OUTPUT
-
-      - name: Run clang-tidy on src/ and include/
-        run: |
-          db_path="${{ steps.compiledb-path.outputs.path }}"
-          if [ -z "$db_path" ]; then
-            echo "No compile_commands.json found, skipping clang-tidy."
-            exit 0
-          fi
-          find src include -name '*.cpp' -o -name '*.h' | xargs clang-tidy -p "$db_path" --warnings-as-errors='*' --quiet || true
-
   static-analysis:
     name: Static Analysis
     runs-on: ubuntu-latest
-
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
-
-      - name: Install clang-tidy
-        run: sudo apt-get update && sudo apt-get install -y clang-tidy
 
       - name: Set up Python
         uses: actions/setup-python@v5
         with:
           python-version: "3.x"
 
-      - name: Install compatible click
-        run: pip install 'click<8.1.0' # prevent conflicts with PlatformIO
-
       - name: Install PlatformIO
-        run: pip install platformio
-
-      - name: Install PlatformIO
-        run: pip install platformio
-
-      - name: Run analysis
         run: |
-          pio check
+          pip install 'click<8.1.0'
+          pip install platformio
+
+      - name: Run PlatformIO Check
+        run: |
+          pio check --fail-on-defect high
 
   build:
     name: Build with PlatformIO
