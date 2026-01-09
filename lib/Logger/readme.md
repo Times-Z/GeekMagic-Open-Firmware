@@ -22,16 +22,21 @@ void setup() {
 ### Log Examples
 
 ```cpp
+// without class name
 Logger::debug("Debug message");
 Logger::info("Info message");
 Logger::warn("Warning message");
 Logger::error("Error message");
+
+// with class/component name
+Logger::info("Initialization completed", "MyClass");
+Logger::error("Failed to open file", "ConfigManager");
 ```
 
 ### Output Format
 
 ```
-[HH:MM:SS](LEVEL) message
+[HH:MM:SS](LEVEL)::ClassName message
 ```
 
 -   LEVEL: DEBUG, INFO, WARN, ERROR

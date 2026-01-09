@@ -6,12 +6,23 @@
  *
  * @param level The severity level of the log message
  * @param message The message to be logged
+ * @param className optional class name for context
  */
-void Logger::log(LogLevel level, const char* message) {
+void Logger::log(LogLevel level, const char* message, const char* className) {
     printTime();
     Serial.print("(");
     Serial.print(levelToString(level));
-    Serial.print(") ");
+    Serial.print(")");
+    Serial.print("::");
+
+    if (className != nullptr && className[0] != '\0') {
+        Serial.print(className);
+    } else {
+        Serial.print("Global");
+    }
+
+    Serial.print(" ");
+
     Serial.println(message);
 }
 
@@ -19,29 +30,33 @@ void Logger::log(LogLevel level, const char* message) {
  * @brief Logs a debug message
  *
  * @param message The debug message to log
+ * @param className optional class name for context
  */
-void Logger::debug(const char* message) { log(LOG_DEBUG, message); }
+void Logger::debug(const char* message, const char* className) { log(LOG_DEBUG, message, className); }
 
 /**
  * @brief Logs an info message
  *
  * @param message The info message to log
+ * @param className optional class name for context
  */
-void Logger::info(const char* message) { log(LOG_INFO, message); }
+void Logger::info(const char* message, const char* className) { log(LOG_INFO, message, className); }
 
 /**
  * @brief Logs a warning message
  *
  * @param message The warning message to log
+ * @param className optional class name for context
  */
-void Logger::warn(const char* message) { log(LOG_WARN, message); }
+void Logger::warn(const char* message, const char* className) { log(LOG_WARN, message, className); }
 
 /**
  * @brief Logs an error message
  *
  * @param message The error message to log
+ * @param className optional class name for context
  */
-void Logger::error(const char* message) { log(LOG_ERROR, message); }
+void Logger::error(const char* message, const char* className) { log(LOG_ERROR, message, className); }
 
 /**
  * @brief Print the current local time in [HH:MM:SS]

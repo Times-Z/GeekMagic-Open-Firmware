@@ -7,11 +7,11 @@ enum LogLevel { LOG_DEBUG, LOG_INFO, LOG_WARN, LOG_ERROR };
 
 class Logger {
    public:
-    static void log(LogLevel level, const char* message);
-    static void debug(const char* message);
-    static void info(const char* message);
-    static void warn(const char* message);
-    static void error(const char* message);
+    static void log(LogLevel level, const char* message, const char* className = nullptr);
+    static void debug(const char* message, const char* className = nullptr);
+    static void info(const char* message, const char* className = nullptr);
+    static void warn(const char* message, const char* className = nullptr);
+    static void error(const char* message, const char* className = nullptr);
 
    private:
     static void printTime();
