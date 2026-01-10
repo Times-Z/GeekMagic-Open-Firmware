@@ -21,7 +21,7 @@ void Logger::log(LogLevel level, const char* message, const char* className) {
         Serial.print("Global");
     }
 
-    Serial.print(" ");
+    Serial.print(": ");
 
     Serial.println(message);
 }

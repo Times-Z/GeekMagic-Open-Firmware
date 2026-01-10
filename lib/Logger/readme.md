@@ -36,7 +36,7 @@ Logger::error("Failed to open file", "ConfigManager");
 ### Output Format
 
 ```
-[HH:MM:SS](LEVEL)::ClassName message
+[HH:MM:SS](LEVEL)::ClassName: message
 ```
 
 -   LEVEL: DEBUG, INFO, WARN, ERROR
