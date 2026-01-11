@@ -11,7 +11,72 @@
     <main class="container">
       <header>
         <h1>Hellocubic Open Firmware</h1>
+        <div x-data="themeSwitcher()">
+          <button
+            @click="toggleTheme"
+            aria-label="Changer le thème"
+            class="theme-switch-btn"
+          >
+            <span
+              class="theme-icon"
+              style="
+                vertical-align: middle;
+                display: inline-block;
+                position: relative;
+                width: 24px;
+                height: 24px;
+              "
+            >
+              <svg
+                id="theme-svg-icon"
+                width="24"
+                height="24"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="2"
+                stroke-linecap="round"
+                stroke-linejoin="round"
+              >
+                <circle
+                  id="theme-main-circle"
+                  cx="12"
+                  cy="12"
+                  r="6.2"
+                  fill="currentColor"
+                  stroke="none"
+                />
+                <g id="theme-sun-rays" fill="currentColor" stroke="none">
+                  <circle cx="12" cy="2.5" r="1.5" />
+                  <circle cx="12" cy="21.5" r="1.5" />
+                  <circle cx="2.5" cy="12" r="1.5" />
+                  <circle cx="21.5" cy="12" r="1.5" />
+                  <circle cx="5.1" cy="5.1" r="1.5" />
+                  <circle cx="18.9" cy="18.9" r="1.5" />
+                  <circle cx="5.1" cy="18.9" r="1.5" />
+                  <circle cx="18.9" cy="5.1" r="1.5" />
+                </g>
+                <mask id="moon-mask">
+                  <rect x="0" y="0" width="24" height="24" fill="white" />
+                  <circle id="moon-cut" cx="16" cy="12" r="8" fill="black" />
+                </mask>
+                <circle
+                  id="theme-moon"
+                  cx="12"
+                  cy="12"
+                  r="8"
+                  fill="currentColor"
+                  stroke="none"
+                  mask="url(#moon-mask)"
+                  style="display: none"
+                />
+              </svg>
+            </span>
+          </button>
+        </div>
+        <div id="theme-waterdrop-overlay"></div>
       </header>
+
       <section>
         <div x-data="rebootHandler()">
           <button

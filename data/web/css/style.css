@@ -1,3 +1,51 @@
+[data-theme="light"] #theme-sun-rays {
+  fill: #111 !important;
+}
+
+[data-theme="light"] #theme-main-circle {
+  fill: #111 !important;
+}
+
+[data-theme="dark"] #theme-main-circle {
+  fill: transparent !important;
+}
+.theme-switch-btn svg {
+  display: block;
+  stroke: #222;
+  transition: opacity 0.3s, transform 0.5s;
+  opacity: 1;
+}
+
+[data-theme="dark"] .theme-switch-btn svg {
+  stroke: #f1f1f1;
+}
+
+.theme-switch-btn {
+  position: absolute;
+  top: 1rem;
+  right: 1rem;
+  background: none;
+  border: none;
+  cursor: pointer;
+  padding: 0;
+  outline: none;
+  transition: filter 0.2s;
+  z-index: 10;
+}
+
+.theme-switch-btn svg {
+  display: block;
+  stroke: #222;
+}
+
+[data-theme="dark"] .theme-switch-btn svg {
+  stroke: #f1f1f1;
+}
+
+.theme-switch-btn:hover svg {
+  filter: drop-shadow(0 0 2px #0077b6);
+}
+
 html,
 body {
   height: 100%;
@@ -10,6 +58,25 @@ body {
   margin: 0;
 }
 
+#theme-waterdrop-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100vw;
+  height: 100vh;
+  pointer-events: none;
+  z-index: 9999;
+  background: var(--theme-waterdrop-bg, #fff);
+  clip-path: circle(0% at 50% 50%);
+  transition: clip-path 0.7s cubic-bezier(0.4, 0, 0.2, 1);
+  will-change: clip-path, background;
+  opacity: 1;
+}
+#theme-waterdrop-overlay.active {
+  pointer-events: auto;
+  opacity: 1;
+}
+
 main.container {
   flex: 1 0 auto;
   display: flex;
@@ -19,4 +86,59 @@ main.container {
 footer {
   margin-top: auto;
   text-align: center;
+}
+
+[data-theme="dark"] {
+  background: #181a1b;
+  color: #f1f1f1;
+}
+
+[data-theme="dark"] a {
+  color: #8ecae6;
+}
+
+[data-theme="dark"] header,
+[data-theme="dark"] footer {
+  background: #181a1b;
+}
+[data-theme="light"] header,
+[data-theme="light"] footer {
+  background: #fff;
+}
+
+[data-theme="light"] {
+  background: #fff;
+  color: #222;
+}
+
+[data-theme="light"] a {
+  color: #0077b6;
+}
+
+details.dropdown {
+  position: absolute;
+  top: 1rem;
+  right: 1rem;
+}
+
+details.dropdown[open] ul {
+  background: inherit;
+  border: 1px solid #ccc;
+  border-radius: 0.5em;
+  padding: 0.5em 0;
+  margin: 0;
+  list-style: none;
+  min-width: 120px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+}
+
+details.dropdown ul li a {
+  display: block;
+  padding: 0.5em 1em;
+  text-decoration: none;
+  cursor: pointer;
+}
+
+details.dropdown ul li a:hover {
+  background: #eee;
 }
