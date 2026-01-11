@@ -8,6 +8,8 @@
 #include "config/ConfigManager.h"
 #include "wireless/WiFiManager.h"
 #include "display/DisplayManager.h"
+#include "web/Webserver.h"
+#include "web/api.h"
 
 ConfigManager configManager;
 const char* AP_SSID = "HelloCubicLite";
@@ -16,6 +18,8 @@ WiFiManager* wifiManager = nullptr;
 
 static constexpr uint32_t SERIAL_BAUD_RATE = 115200;
 static constexpr uint32_t BOOT_DELAY_MS = 200;
+
+Webserver* webserver = nullptr;
 
 /**
  * @brief Initializes the system
@@ -43,8 +47,21 @@ void setup() {
 
     wifiManager = new WiFiManager(configManager.getSSID(), configManager.getPassword(), AP_SSID, AP_PASSWORD);
     wifiManager->begin();
+
+    webserver = new Webserver();
+    webserver->begin();
+
+    registerApiEndpoints(webserver);
+
+    webserver->serveStatic("/", "/web/index.html", "text/html");
+    webserver->serveStatic("/css/pico.min.css", "/web/css/pico.min.css", "text/css");
+    webserver->serveStatic("/css/style.css", "/web/css/style.css", "text/css");
+    webserver->serveStatic("/js/alpinejs.min.js", "/web/js/alpinejs.min.js", "application/javascript");
+    webserver->serveStatic("/js/main.js", "/web/js/main.js", "application/javascript");
 }
 
 void loop() {
-    // put your main code here, to run repeatedly:
+    if (webserver != nullptr) {
+        webserver->handleClient();
+    }
 }

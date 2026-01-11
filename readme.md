@@ -178,6 +178,17 @@ The ota_secure one is just a POC of working screen and wifi to ensure the projec
 
 WIP
 
+### Stack
+
+| Component         | Technology / Library                                                     | Main Role                               |
+| ----------------- | ------------------------------------------------------------------------ | --------------------------------------- |
+| Microcontroller   | ESP8266 (esp12e)                                                         | Main hardware platform                  |
+| Build environment | PlatformIO                                                               | Project management, build, upload       |
+| Framework         | Arduino Framework                                                        | Software base for ESP8266               |
+| Filesystem        | LittleFS                                                                 | Local storage LittleFS                  |
+| Graphics display  | Arduino_GFX Library                                                      | ST7789 display management (SPI, RGB565) |
+| Web UI (frontend) | [Pico.css](https://picocss.com/docs), [Alpine.js](https://alpinejs.dev/) | Minimalist web user interface           |
+
 ### Build and upload code
 
 ```bash

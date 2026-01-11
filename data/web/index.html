@@ -1,0 +1,41 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Hellocubic Open Firmware</title>
+    <link rel="stylesheet" href="./css/pico.min.css" />
+    <link rel="stylesheet" href="./css/style.css" />
+  </head>
+  <body>
+    <main class="container">
+      <header>
+        <h1>Hellocubic Open Firmware</h1>
+      </header>
+      <section>
+        <div x-data="rebootHandler()">
+          <button
+            class="contrast"
+            x-bind:disabled="loading"
+            x-on:click="reboot"
+          >
+            Reboot
+          </button>
+          <p x-text="message"></p>
+        </div>
+        <script src="./js/alpinejs.min.js" defer></script>
+        <script src="./js/main.js"></script>
+      </section>
+      <footer>
+        <small>
+          <a
+            href="https://github.com/Times-Z/Hellocubic-Lite-OpenFirmware"
+            target="_blank"
+          >
+            Hellocubic Open Firmware
+          </a></small
+        >
+      </footer>
+    </main>
+  </body>
+</html>
