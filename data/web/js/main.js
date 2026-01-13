@@ -1,3 +1,98 @@
+function humanFileSize(bytes) {
+  if (bytes === 0) {
+    return "0 B";
+  }
+
+  const k = 1024;
+  const sizes = ["B", "KB", "MB"];
+  const i = Math.floor(Math.log(bytes) / Math.log(k));
+
+  return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + " " + sizes[i];
+}
+
+function gifUploadHandler() {
+  return {
+    uploading: false,
+    uploadMessage: "",
+    gifs: [],
+    usedBytes: 0,
+    totalBytes: 0,
+    freeBytes: 0,
+
+    get usedBytesHR() {
+      return humanFileSize(this.usedBytes);
+    },
+
+    get totalBytesHR() {
+      return humanFileSize(this.totalBytes);
+    },
+
+    get freeBytesHR() {
+      return humanFileSize(this.freeBytes);
+    },
+
+    gifListLoaded: false,
+
+    async uploadGif() {
+      this.uploading = true;
+      this.uploadMessage = "";
+      const file = this.$refs.fileInput.files[0];
+
+      if (!file || file.type !== "image/gif") {
+        this.uploadMessage = "Please select a GIF file.";
+        this.uploading = false;
+
+        return;
+      }
+
+      const formData = new FormData();
+      formData.append("file", file, file.name);
+
+      try {
+        const response = await fetch("/api/v1/gif", {
+          method: "POST",
+          body: formData,
+        });
+
+        const result = await response.json();
+
+        if (result.status === "success") {
+          this.uploadMessage = "GIF uploaded: " + result.filename;
+          await this.fetchGifList();
+        } else {
+          this.uploadMessage = result.message || "Upload failed.";
+        }
+      } catch (e) {
+        this.uploadMessage = "Error uploading GIF: " + e;
+      }
+
+      this.uploading = false;
+    },
+
+    async fetchGifList() {
+      this.gifListLoaded = false;
+
+      try {
+        const response = await fetch("/api/v1/gif");
+        const data = await response.json();
+        this.gifs = data.files || [];
+        this.usedBytes = data.usedBytes || 0;
+        this.totalBytes = data.totalBytes || 0;
+        this.freeBytes = data.freeBytes || 0;
+      } catch (e) {
+        this.gifs = [];
+        this.usedBytes = this.totalBytes = this.freeBytes = 0;
+      }
+
+      this.gifListLoaded = true;
+    },
+
+    async init() {
+      await this.fetchGifList();
+    },
+  };
+}
+
 function includeHTML(id, url, callback) {
   fetch(url)
     .then((response) => response.text())
@@ -230,4 +325,5 @@ function otaUploadHandler() {
 document.addEventListener("alpine:init", () => {
   Alpine.data("themeSwitcher", themeSwitcher);
   Alpine.data("otaUploadHandler", otaUploadHandler);
+  Alpine.data("gifUploadHandler", gifUploadHandler);
 });

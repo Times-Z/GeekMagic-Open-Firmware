@@ -1,0 +1,62 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Upload GIF</title>
+    <link rel="stylesheet" href="./css/pico.min.css" />
+    <link rel="stylesheet" href="./css/style.css" />
+    <script src="./js/alpinejs.min.js" defer></script>
+    <script src="./js/main.js"></script>
+  </head>
+  <body>
+    <main class="container">
+      <header id="header-placeholder"></header>
+
+      <a href="./index.html" style="margin-left: 2em">← Back to Home</a>
+      <section>
+        <div x-data="gifUploadHandler()" style="margin-top: 2em">
+          <h2>Upload GIF</h2>
+          <form @submit.prevent="uploadGif">
+            <input type="file" x-ref="fileInput" required accept="image/gif" />
+            <button type="submit" x-bind:disabled="uploading">Upload</button>
+          </form>
+          <template x-if="uploading">
+            <span aria-busy="true" style="margin-left: 1em">Uploading...</span>
+          </template>
+          <p x-text="uploadMessage"></p>
+
+          <section style="margin-top: 2em">
+            <h3>GIFs on device</h3>
+            <div x-show="gifListLoaded">
+              <p>
+                <strong>Used:</strong> <span x-text="usedBytesHR"></span> /
+                <strong>Total:</strong>
+                <span x-text="totalBytesHR"></span> (<strong>Free:</strong>
+                <span x-text="freeBytesHR"></span>)
+              </p>
+              <template x-if="gifs.length === 0">
+                <p>No GIFs uploaded yet.</p>
+              </template>
+              <ul>
+                <template x-for="gif in gifs" :key="gif.name">
+                  <li>
+                    <span x-text="gif.name"></span> (<span
+                      x-text="$root.humanFileSize(gif.size)"
+                    ></span
+                    >)
+                  </li>
+                </template>
+              </ul>
+            </div>
+            <div x-show="!gifListLoaded">
+              <em>Loading GIF list...</em>
+            </div>
+          </section>
+        </div>
+      </section>
+
+      <footer id="footer-placeholder"></footer>
+    </main>
+  </body>
+</html>
