@@ -1,6 +1,6 @@
 {
   "wifi_ssid": "",
-  "wifi_password": ""
+  "wifi_password": "",
   "lcd_enable": true,
   "lcd_w": 240,
   "lcd_h": 240,
