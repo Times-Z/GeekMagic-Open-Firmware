@@ -95,7 +95,7 @@ void setup() {
 
     delay(LOADING_DELAY_MS);
 
-    DisplayManager::drawStartup();
+    DisplayManager::drawStartup(wifiManager->getIP().toString());
 }
 
 void loop() {

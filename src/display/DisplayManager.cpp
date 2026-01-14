@@ -582,7 +582,7 @@ auto DisplayManager::isReady() -> bool { return g_lcdReady && g_lcd != nullptr &
  *
  * @return void
  */
-auto DisplayManager::drawStartup() -> void {
+auto DisplayManager::drawStartup(String currentIP) -> void {
     if (!DisplayManager::isReady()) {
         Logger::warn("Display not ready", "DisplayManager");
 
@@ -601,17 +601,18 @@ auto DisplayManager::drawStartup() -> void {
     g_lcd->fillScreen(LCD_BLACK);
 
     int constexpr titleY = 30;
-    int constexpr infoY = 100;
     int constexpr fontSize = 2;
 
     DisplayManager::drawTextWrapped(DISPLAY_PADDING, titleY, "HelloCubic Lite Open Firmware", fontSize, LCD_WHITE,
                                     LCD_BLACK, false);
-    DisplayManager::drawTextWrapped(DISPLAY_PADDING, infoY, String(PROJECT_VER_STR), fontSize, LCD_WHITE, LCD_BLACK,
-                                    false);
+    DisplayManager::drawTextWrapped(DISPLAY_PADDING, titleY + THREE_LINES_SPACE, String(PROJECT_VER_STR), fontSize,
+                                    LCD_WHITE, LCD_BLACK, false);
+    DisplayManager::drawTextWrapped(DISPLAY_PADDING, (titleY + THREE_LINES_SPACE + TWO_LINES_SPACE), "IP: " + currentIP,
+                                    fontSize, LCD_WHITE, LCD_BLACK, false);
 
     const int16_t box = 40;
     const int16_t gap = 20;
-    const int16_t boxY = 200;
+    const int16_t boxY = titleY + (THREE_LINES_SPACE * 2) + ONE_LINE_SPACE;
 
     g_lcd->fillRect(DISPLAY_PADDING, boxY, box, box, LCD_RED);
     g_lcd->fillRect((int16_t)(DISPLAY_PADDING + box + gap), boxY, box, box, LCD_GREEN);
