@@ -1,7 +1,7 @@
-#include "display/HelloCubicSPIBus.h"
+#include "display/GeekMagicSPIBus.h"
 
 /**
- * @brief Construct a new Hello Cubic SPI Bus:: Hello Cubic SPI Bus object
+ * @brief Construct a new Geek Magic SPI Bus:: Geek Magic SPI Bus object
  *
  * @param dc Data/Command pin
  * @param cs Chip Select pin
@@ -9,8 +9,8 @@
  * @param defaultSpeed Default SPI speed
  * @param defaultDataMode Default SPI data mode
  */
-HelloCubicSPIBus::HelloCubicSPIBus(int8_t dataCmdPin, int8_t csPin, bool csActiveHigh, int32_t defaultSpeed,
-                                   int8_t defaultDataMode)
+GeekMagicSPIBus::GeekMagicSPIBus(int8_t dataCmdPin, int8_t csPin, bool csActiveHigh, int32_t defaultSpeed,
+                                 int8_t defaultDataMode)
     : _spi(dataCmdPin, GFX_NOT_DEFINED, &SPI, true),
       _cs(csPin),
       _csActiveHigh(csActiveHigh),
@@ -24,7 +24,7 @@ HelloCubicSPIBus::HelloCubicSPIBus(int8_t dataCmdPin, int8_t csPin, bool csActiv
  *
  * @return true if initialization is successful false otherwise
  */
-auto HelloCubicSPIBus::begin(int32_t speed, int8_t dataMode) -> bool {
+auto GeekMagicSPIBus::begin(int32_t speed, int8_t dataMode) -> bool {
     if (speed == GFX_NOT_DEFINED) {
         speed = _defaultSpeed;
     }
@@ -45,7 +45,7 @@ auto HelloCubicSPIBus::begin(int32_t speed, int8_t dataMode) -> bool {
  *
  * @return void
  */
-auto HelloCubicSPIBus::beginWrite() -> void {
+auto GeekMagicSPIBus::beginWrite() -> void {
     if (_cs != GFX_NOT_DEFINED) {
         digitalWrite((uint8_t)_cs, _csActiveHigh ? HIGH : LOW);
     }
@@ -57,7 +57,7 @@ auto HelloCubicSPIBus::beginWrite() -> void {
  *
  * @return void
  */
-auto HelloCubicSPIBus::endWrite() -> void {
+auto GeekMagicSPIBus::endWrite() -> void {
     _spi.endWrite();
 
     if (LCD_KEEP_CS_ASSERTED) {

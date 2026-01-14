@@ -3,7 +3,7 @@
 
 #include "project_version.h"
 #include "display/DisplayManager.h"
-#include "display/HelloCubicSPIBus.h"
+#include "display/GeekMagicSPIBus.h"
 #include "config/ConfigManager.h"
 
 extern ConfigManager configManager;
@@ -319,7 +319,7 @@ static void lcdEnsureInit() {
         g_lcd = nullptr;
     }
     if (g_lcdBus != nullptr) {
-        delete static_cast<HelloCubicSPIBus*>(g_lcdBus);
+        delete static_cast<GeekMagicSPIBus*>(g_lcdBus);
         g_lcdBus = nullptr;
     }
 
@@ -334,7 +334,7 @@ static void lcdEnsureInit() {
     int16_t lcd_w = configManager.getLCDWidthSafe();
     int16_t lcd_h = configManager.getLCDHeightSafe();
 
-    g_lcdBus = new HelloCubicSPIBus(dc_gpio, cs_gpio, cs_active_high, (int32_t)spi_hz, (int8_t)spi_mode);
+    g_lcdBus = new GeekMagicSPIBus(dc_gpio, cs_gpio, cs_active_high, (int32_t)spi_hz, (int8_t)spi_mode);
     g_lcd = new Arduino_ST7789(g_lcdBus, -1, rotation, true, lcd_w, lcd_h);
 
     g_lcdBus->begin((int32_t)spi_hz, (int8_t)spi_mode);
@@ -596,11 +596,11 @@ auto DisplayManager::drawStartup(String currentIP) -> void {
 
     g_lcd->fillScreen(LCD_BLACK);
 
-    int constexpr titleY = 30;
+    int constexpr titleY = 10;
     int constexpr fontSize = 2;
 
-    DisplayManager::drawTextWrapped(DISPLAY_PADDING, titleY, "HelloCubic Lite Open Firmware", fontSize, LCD_WHITE,
-                                    LCD_BLACK, false);
+    DisplayManager::drawTextWrapped(DISPLAY_PADDING, titleY, "GeekMagic Open Firmware", fontSize, LCD_WHITE, LCD_BLACK,
+                                    false);
     DisplayManager::drawTextWrapped(DISPLAY_PADDING, titleY + THREE_LINES_SPACE, String(PROJECT_VER_STR), fontSize,
                                     LCD_WHITE, LCD_BLACK, false);
     DisplayManager::drawTextWrapped(DISPLAY_PADDING, (titleY + THREE_LINES_SPACE + TWO_LINES_SPACE), "IP: " + currentIP,

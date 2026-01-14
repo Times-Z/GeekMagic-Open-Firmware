@@ -10,21 +10,21 @@
 static constexpr bool LCD_KEEP_CS_ASSERTED = true;
 
 /**
- * @class HelloCubicSPIBus
- * @brief Custom SPI bus class for HelloCubic Lite display
+ * @class GeekMagicSPIBus
+ * @brief Custom SPI bus class for GeekMagicSPIBus display
  *
  * This class extends Arduino_DataBus to provide SPI communication with custom Chip Select (CS) handling for the
- * HelloCubic Lite display
+ * GeekMagicSPIBus display
  */
-class HelloCubicSPIBus : public Arduino_DataBus {
+class GeekMagicSPIBus : public Arduino_DataBus {
    public:
-    HelloCubicSPIBus(int8_t dataCmdPin, int8_t csPin, bool csActiveHigh, int32_t defaultSpeed, int8_t defaultDataMode);
+    GeekMagicSPIBus(int8_t dataCmdPin, int8_t csPin, bool csActiveHigh, int32_t defaultSpeed, int8_t defaultDataMode);
 
     bool begin(int32_t speed = GFX_NOT_DEFINED, int8_t dataMode = GFX_NOT_DEFINED) override;
     void beginWrite() override;
     void endWrite() override;
 
-    virtual ~HelloCubicSPIBus() {}
+    virtual ~GeekMagicSPIBus() {}
 
     void writeCommand(uint8_t c) override { _spi.writeCommand(c); }
     void writeCommand16(uint16_t c) override { _spi.writeCommand16(c); }

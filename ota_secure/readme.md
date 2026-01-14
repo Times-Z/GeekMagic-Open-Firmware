@@ -1,4 +1,4 @@
-# Hellocubic Lite — ota_secure
+# GeekMagic — ota_secure
 
 This document explains how to install the required Arduino core and libraries, and how to compile the `ota_secure.ino` firmware using `arduino-cli`
 This firmware was originally intended solely for hardware debugging/testing; it provides a way to flash the firmware over-the-air (OTA) to avoid connecting physical pins to the device

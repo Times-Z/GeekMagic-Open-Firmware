@@ -1,5 +1,5 @@
 {
-	"name": "Hellocubic OpenFirmware",
+	"name": "Geekmagic OpenFirmware",
 	"build": {
 		"dockerfile": "Dockerfile"
 	},

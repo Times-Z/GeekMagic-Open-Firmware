@@ -4,10 +4,10 @@
 
 > It also comptabile with the **Smalltv-Ultra** from [GeekMagicClock](https://github.com/GeekMagicClock/smalltv-ultra)
 
-[![Latest Release](https://img.shields.io/github/v/release/Times-Z/Hellocubic-Lite-OpenFirmware?label=Latest%20Version&color=c56a90&style=for-the-badge&logo=star)](https://github.com/Times-Z/Hellocubic-Lite-OpenFirmware/releases)
-[![Build status main](https://img.shields.io/github/actions/workflow/status/Times-Z/Hellocubic-Lite-OpenFirmware/.github/workflows/ci.yml?branch=main&label=Pipeline%20Status%20main&style=for-the-badge&logo=star)](https://github.com/Times-Z/Hellocubic-Lite-OpenFirmware/actions)
+[![Latest Release](https://img.shields.io/github/v/release/Times-Z/GeekMagic-Open-Firmware?label=Latest%20Version&color=c56a90&style=for-the-badge&logo=star)](https://github.com/Times-Z/GeekMagic-Open-Firmware/releases)
+[![Build status main](https://img.shields.io/github/actions/workflow/status/Times-Z/GeekMagic-Open-Firmware/.github/workflows/ci.yml?branch=main&label=Pipeline%20Status%20main&style=for-the-badge&logo=star)](https://github.com/Times-Z/GeekMagic-Open-Firmware/actions)
 
-[![Build status develop](https://img.shields.io/github/actions/workflow/status/Times-Z/Hellocubic-Lite-OpenFirmware/.github/workflows/ci.yml?branch=develop&label=Pipeline%20Status%20develop&style=for-the-badge&logo=star)](https://github.com/Times-Z/Hellocubic-Lite-OpenFirmware/actions)
+[![Build status develop](https://img.shields.io/github/actions/workflow/status/Times-Z/GeekMagic-Open-Firmware/.github/workflows/ci.yml?branch=develop&label=Pipeline%20Status%20develop&style=for-the-badge&logo=star)](https://github.com/Times-Z/GeekMagic-Open-Firmware/actions)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg?style=for-the-badge)](LICENSE)
 
 ## Table of Contents
@@ -232,7 +232,7 @@ This project is licensed under the **MIT License** - see the [LICENSE](LICENSE) 
 
 ## Support
 
--   Found a bug or question ? [Open an issue](https://github.com/Times-Z/Hellocubic-Lite-OpenFirmware/issues)
+-   Found a bug or question ? [Open an issue](https://github.com/Times-Z/GeekMagic-Open-Firmware/issues)
 
 ---
 
@@ -240,7 +240,7 @@ This project is licensed under the **MIT License** - see the [LICENSE](LICENSE) 
 
 **Made with ❤️**
 
-[Star us on GitHub](https://github.com/Times-Z/Hellocubic-Lite-OpenFirmware.git) if you find this project useful !
+[Star us on GitHub](https://github.com/Times-Z/GeekMagic-Open-Firmware.git) if you find this project useful !
 
 This project took me a lot of time !
 

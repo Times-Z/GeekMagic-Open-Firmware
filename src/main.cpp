@@ -33,7 +33,7 @@ void setup() {
     Serial.begin(SERIAL_BAUD_RATE);
     delay(BOOT_DELAY_MS);
     Serial.println("");
-    Logger::info(("HelloCubic Lite Open Firmware " + String(PROJECT_VER_STR)).c_str());
+    Logger::info(("GeekMagic Open Firmware " + String(PROJECT_VER_STR)).c_str());
 
     constexpr int TOTAL_STEPS = 5;
     int step = 0;
