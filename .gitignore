@@ -37,7 +37,7 @@ sdkconfig.old
 idf.py*
 *.bak
 
-!backup/*.bin
+!backup/**/*.bin
 
 .pio/
 include/project_version.h

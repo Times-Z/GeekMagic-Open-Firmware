@@ -4,23 +4,10 @@
 #include "project_version.h"
 #include "display/DisplayManager.h"
 #include "display/HelloCubicSPIBus.h"
+#include "config/ConfigManager.h"
 
-// LCD configuration defaults
-static constexpr bool LCD_ENABLE = true;
-static constexpr int16_t LCD_W = 240;
-static constexpr int16_t LCD_H = 240;
-static constexpr uint8_t LCD_ROTATION = 4;
-static constexpr int8_t LCD_MOSI_GPIO = 13;
-static constexpr int8_t LCD_SCK_GPIO = 14;
-static constexpr int8_t LCD_CS_GPIO = 2;
-static constexpr int8_t LCD_DC_GPIO = 0;
-static constexpr int8_t LCD_RST_GPIO = 15;
-static constexpr bool LCD_CS_ACTIVE_HIGH = true;
-static constexpr bool LCD_DC_CMD_HIGH = false;
-static constexpr uint8_t LCD_SPI_MODE = 0;
-static constexpr uint32_t LCD_SPI_HZ = 40000000;
-static constexpr int8_t LCD_BACKLIGHT_GPIO = 5;
-static constexpr bool LCD_BACKLIGHT_ACTIVE_LOW = true;
+extern ConfigManager configManager;
+
 static Arduino_DataBus* g_lcdBus = nullptr;
 static Arduino_GFX* g_lcd = nullptr;
 static bool g_lcdReady = false;
@@ -101,14 +88,14 @@ static constexpr uint8_t ST7789_ADDR_END_LOW = 0xEF;
  * @return void
  */
 static inline void lcdBacklightOn() {
-    if (LCD_BACKLIGHT_GPIO < 0) {
+    int8_t gpio = configManager.getLCDBacklightGpioSafe();
+    if (gpio < 0) {
         Logger::warn("No backlight GPIO defined", "DisplayManager");
-
         return;
     }
 
-    pinMode((uint8_t)LCD_BACKLIGHT_GPIO, OUTPUT);
-    digitalWrite((uint8_t)LCD_BACKLIGHT_GPIO, LCD_BACKLIGHT_ACTIVE_LOW ? LOW : HIGH);
+    pinMode((uint8_t)gpio, OUTPUT);
+    digitalWrite((uint8_t)gpio, configManager.getLCDBacklightActiveLowSafe() ? LOW : HIGH);
 }
 
 /**
@@ -292,17 +279,18 @@ static void lcdRunVendorInit() {
  * @return void
  */
 static void lcdHardReset() {
-    if (LCD_RST_GPIO < 0) {
+    int8_t rst_gpio = configManager.getLCDRstGpioSafe();
+    if (rst_gpio < 0) {
         Logger::warn("No reset GPIO defined", "DisplayManager");
         return;
     }
 
-    pinMode((uint8_t)LCD_RST_GPIO, OUTPUT);
-    digitalWrite((uint8_t)LCD_RST_GPIO, HIGH);
+    pinMode((uint8_t)rst_gpio, OUTPUT);
+    digitalWrite((uint8_t)rst_gpio, HIGH);
     delay(LCD_HARDWARE_RESET_DELAY_MS);
-    digitalWrite((uint8_t)LCD_RST_GPIO, LOW);
+    digitalWrite((uint8_t)rst_gpio, LOW);
     delay(LCD_HARDWARE_RESET_DELAY_MS);
-    digitalWrite((uint8_t)LCD_RST_GPIO, HIGH);
+    digitalWrite((uint8_t)rst_gpio, HIGH);
     delay(LCD_HARDWARE_RESET_DELAY_MS);
 }
 
@@ -312,7 +300,7 @@ static void lcdHardReset() {
  * @return void
  */
 static void lcdEnsureInit() {
-    if (!LCD_ENABLE || g_lcdReady || g_lcdInitializing) {
+    if (!configManager.getLCDEnableSafe() || g_lcdReady || g_lcdInitializing) {
         return;
     };
 
@@ -337,21 +325,29 @@ static void lcdEnsureInit() {
 
     SPI.begin();
 
-    g_lcdBus =
-        new HelloCubicSPIBus(LCD_DC_GPIO, LCD_CS_GPIO, LCD_CS_ACTIVE_HIGH, (int32_t)LCD_SPI_HZ, (int8_t)LCD_SPI_MODE);
-    g_lcd = new Arduino_ST7789(g_lcdBus, -1, LCD_ROTATION, true, LCD_W, LCD_H);
+    int8_t dc_gpio = configManager.getLCDDcGpioSafe();
+    int8_t cs_gpio = configManager.getLCDCsGpioSafe();
+    bool cs_active_high = configManager.getLCDCsActiveHighSafe();
+    uint32_t spi_hz = configManager.getLCDSpiHzSafe();
+    uint8_t spi_mode = configManager.getLCDSpiModeSafe();
+    uint8_t rotation = configManager.getLCDRotationSafe();
+    int16_t lcd_w = configManager.getLCDWidthSafe();
+    int16_t lcd_h = configManager.getLCDHeightSafe();
 
-    g_lcdBus->begin((int32_t)LCD_SPI_HZ, (int8_t)LCD_SPI_MODE);
+    g_lcdBus = new HelloCubicSPIBus(dc_gpio, cs_gpio, cs_active_high, (int32_t)spi_hz, (int8_t)spi_mode);
+    g_lcd = new Arduino_ST7789(g_lcdBus, -1, rotation, true, lcd_w, lcd_h);
+
+    g_lcdBus->begin((int32_t)spi_hz, (int8_t)spi_mode);
 
     g_lcd->begin();
     delay(LCD_BEGIN_DELAY_MS);
 
     lcdHardReset();
-    g_lcdBus->begin((int32_t)LCD_SPI_HZ, (int8_t)LCD_SPI_MODE);
+    g_lcdBus->begin((int32_t)spi_hz, (int8_t)spi_mode);
 
     lcdRunVendorInit();
 
-    g_lcd->setRotation(LCD_ROTATION);
+    g_lcd->setRotation(rotation);
 
     g_lcdReady = true;
     g_lcdInitializing = false;
@@ -657,7 +653,7 @@ void DisplayManager::drawLoadingBar(float progress, int yPos, int barWidth, int 
         return;
     }
 
-    auto barXPos = (static_cast<int32_t>(LCD_W) - static_cast<int32_t>(barWidth)) / 2;
+    auto barXPos = (static_cast<int32_t>(configManager.getLCDWidthSafe()) - static_cast<int32_t>(barWidth)) / 2;
     auto barXPos16 = static_cast<int16_t>(barXPos);
     auto yPos16 = static_cast<int16_t>(yPos);
     auto barWidth16 = static_cast<int16_t>(barWidth);

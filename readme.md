@@ -1,6 +1,8 @@
-# HelloCubic-Lite open firmware
+# Geekmagic open firmware
 
 > This repo documents the LCD interface inside the **HelloCubic Lite** cube (ESP8266) from [GeekMagicClock](https://github.com/GeekMagicClock/HelloCubic-Lite)
+
+> It also comptabile with the **Smalltv-Ultra** from [GeekMagicClock](https://github.com/GeekMagicClock/smalltv-ultra)
 
 [![Latest Release](https://img.shields.io/github/v/release/Times-Z/Hellocubic-Lite-OpenFirmware?label=Latest%20Version&color=c56a90&style=for-the-badge&logo=star)](https://github.com/Times-Z/Hellocubic-Lite-OpenFirmware/releases)
 [![Build status main](https://img.shields.io/github/actions/workflow/status/Times-Z/Hellocubic-Lite-OpenFirmware/.github/workflows/ci.yml?branch=main&label=Pipeline%20Status%20main&style=for-the-badge&logo=star)](https://github.com/Times-Z/Hellocubic-Lite-OpenFirmware/actions)
@@ -41,21 +43,23 @@
 **A basic firmware based on Arduino is available in [ota_secure](ota_secure/readme.md) to check if your hardware is compatible**
 
 **I recommend making a complete [backup](backup/readme.md) of your flash before doing anything**
-**I've upload my factory backup (7.0.17); it might be useful. Backup tested and approved, it works**
+**I've upload my factory backup (version 7.0.17 for cube and 9.0.40 for small tv); it might be useful. Backup tested and approved, it works**
 
 ## Teardown
 
 > Version i've bought : https://a.aliexpress.com/_EH3UQ0u
-> Maybe hardware is different with others vendor, but original firmware work on my version so...
+
+> For the Smalltv : https://a.aliexpress.com/_EzEZgvi
 
 -   **MCU**: ESP8266
 -   **LCD controller**: ST7789 (RGB565)
 -   **Case**: 3d printed
 
 <div align="center">
-   <img src=".github/assets/02-disassembly.jpg" alt="Cube Disassembly" width="1000" />
+   <img src=".github/assets/02-disassembly-cube.jpg" alt="Cube Disassembly" width="1000" />
+   <img src=".github/assets/02-disassembly-tv.jpg" alt="Cube Disassembly" width="1000" />
    <br>
-   <em>Cube Disassembly</em>
+   <em>Cube & TV Disassembly</em>
 </div>
 
 ## Screen hardware configuration
@@ -67,9 +71,11 @@
 -   **Color Format**: RGB565 (16-bit color)
 -   **Interface**: SPI (Serial Peripheral Interface)
 -   **SPI Speed**: up to 80 MHz (40 MHz is more stable)
--   **Rotation**: Upside-down for cube display
+-   **Rotation**: Upside-down for cube display, normal for the small tv
 
 ### Pin wiring
+
+The wiring is the same form small TV and cube
 
 The display is connected to the ESP8266 using the following GPIO pins:
 
@@ -85,7 +91,7 @@ The display is connected to the ESP8266 using the following GPIO pins:
 <div align="center">
    <img src=".github/assets/03-pinout.jpg" alt="Pinout Diagram" width="1000" />
    <br>
-   <em>Pin Wiring Diagram</em>
+   <em>Pin Wiring Diagram (exact same for small tv)</em>
 </div>
 
 ### Important configuration details
@@ -188,6 +194,17 @@ WIP
 | Filesystem        | LittleFS                                                                 | Local storage LittleFS                  |
 | Graphics display  | Arduino_GFX Library                                                      | ST7789 display management (SPI, RGB565) |
 | Web UI (frontend) | [Pico.css](https://picocss.com/docs), [Alpine.js](https://alpinejs.dev/) | Minimalist web user interface           |
+
+### Upload with OTA
+
+For OTA uploading we need to do that in 2 steps :
+
+#### Upload firmware
+
+First step is to build and upload firmware on top off the original firmware :
+
+-   Just go on http://{your_geekmagic_ip}/update and upload the firmware
+-   Now the cube is restarting with the default seeting of my firmware, but without the FS up to date with configuration (wifi, web interface etc), now you can connect to the wifi, `GeekMagic` SSID with `$str0ngPa$$w0rd` and upload the littlefs.bin into http://192.168.4.1/legacyupdate to have the full configuration
 
 ### Build and upload code
 

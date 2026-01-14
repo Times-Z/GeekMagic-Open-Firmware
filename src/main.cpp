@@ -12,7 +12,7 @@
 #include "web/api.h"
 
 ConfigManager configManager;
-const char* AP_SSID = "HelloCubicLite";
+const char* AP_SSID = "GeekMagic";
 const char* AP_PASSWORD = "$str0ngPa$$w0rd";
 WiFiManager* wifiManager = nullptr;
 

@@ -5,6 +5,23 @@
 #include <string>
 #include <cstdint>
 
+// LCD configuration defaults for hellocubic lite
+static constexpr bool LCD_ENABLE = true;
+static constexpr int16_t LCD_W = 240;
+static constexpr int16_t LCD_H = 240;
+static constexpr uint8_t LCD_ROTATION = 4;
+static constexpr int8_t LCD_MOSI_GPIO = 13;
+static constexpr int8_t LCD_SCK_GPIO = 14;
+static constexpr int8_t LCD_CS_GPIO = 2;
+static constexpr int8_t LCD_DC_GPIO = 0;
+static constexpr int8_t LCD_RST_GPIO = 15;
+static constexpr bool LCD_CS_ACTIVE_HIGH = true;
+static constexpr bool LCD_DC_CMD_HIGH = false;
+static constexpr uint8_t LCD_SPI_MODE = 0;
+static constexpr uint32_t LCD_SPI_HZ = 40000000;
+static constexpr int8_t LCD_BACKLIGHT_GPIO = 5;
+static constexpr bool LCD_BACKLIGHT_ACTIVE_LOW = true;
+
 class ConfigManager {
    public:
     ConfigManager(const char* filename = "/config.json");
@@ -28,7 +45,25 @@ class ConfigManager {
     int8_t getLCDBacklightGpio() const;
     bool getLCDBacklightActiveLow() const;
 
-   private:
+   public:
+    bool getLCDEnableSafe() const { return lcd_enable; }
+    int16_t getLCDWidthSafe() const { return (lcd_w > 0) ? lcd_w : LCD_W; }
+    int16_t getLCDHeightSafe() const { return (lcd_h > 0) ? lcd_h : LCD_H; }
+    uint8_t getLCDRotationSafe() const { return lcd_rotation; }
+    int8_t getLCDMosiGpioSafe() const { return (lcd_mosi_gpio >= 0) ? lcd_mosi_gpio : LCD_MOSI_GPIO; }
+    int8_t getLCDSckGpioSafe() const { return (lcd_sck_gpio >= 0) ? lcd_sck_gpio : LCD_SCK_GPIO; }
+    int8_t getLCDCsGpioSafe() const { return (lcd_cs_gpio >= 0) ? lcd_cs_gpio : LCD_CS_GPIO; }
+    int8_t getLCDDcGpioSafe() const { return (lcd_dc_gpio >= 0) ? lcd_dc_gpio : LCD_DC_GPIO; }
+    int8_t getLCDRstGpioSafe() const { return (lcd_rst_gpio >= 0) ? lcd_rst_gpio : LCD_RST_GPIO; }
+    bool getLCDCsActiveHighSafe() const { return lcd_cs_active_high; }
+    bool getLCDDcCmdHighSafe() const { return lcd_dc_cmd_high; }
+    uint8_t getLCDSpiModeSafe() const { return lcd_spi_mode; }
+    bool getLCDKeepCsAssertedSafe() const { return lcd_keep_cs_asserted; }
+    uint32_t getLCDSpiHzSafe() const { return (lcd_spi_hz > 0) ? lcd_spi_hz : LCD_SPI_HZ; }
+    int8_t getLCDBacklightGpioSafe() const {
+        return (lcd_backlight_gpio >= 0) ? lcd_backlight_gpio : LCD_BACKLIGHT_GPIO;
+    }
+    bool getLCDBacklightActiveLowSafe() const { return lcd_backlight_active_low; }
     std::string ssid;
     std::string password;
     std::string filename;
@@ -45,7 +80,7 @@ class ConfigManager {
     bool lcd_dc_cmd_high = false;
     uint8_t lcd_spi_mode = 0;
     bool lcd_keep_cs_asserted = true;
-    uint32_t lcd_spi_hz = 80000000;
+    uint32_t lcd_spi_hz = 40000000;
     int8_t lcd_backlight_gpio = 5;
     bool lcd_backlight_active_low = true;
 };
