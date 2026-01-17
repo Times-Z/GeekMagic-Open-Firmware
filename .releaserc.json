@@ -8,15 +8,15 @@
       {
         "assets": [
           {
-            "path": ".artifacts/firmware/firmware.bin",
+            "path": "**/firmware.bin",
             "label": "Firmware binary"
           },
           {
-            "path": ".artifacts/filesystem/littlefs.bin",
+            "path": "**/littlefs.bin",
             "label": "LittleFS partition binary"
           },
           {
-            "path": ".artifacts/firmware/project.checksum",
+            "path": "**/project.checksum",
             "label": "Project checksum"
           }
         ]
