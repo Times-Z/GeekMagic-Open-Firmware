@@ -15,15 +15,15 @@
 - [Important information](#important-information)
 - [Teardown](#teardown)
 - [Screen hardware configuration](#screen-hardware-configuration)
-    - [Display specifications](#display-specifications)
-    - [Pin wiring](#pin-wiring)
-    - [Important configuration details](#important-configuration-details)
+  - [Display specifications](#display-specifications)
+  - [Pin wiring](#pin-wiring)
+  - [Important configuration details](#important-configuration-details)
 - [How the screen works](#how-the-screen-works)
-    - [Initialization sequence](#initialization-sequence)
-    - [Communication protocol](#communication-protocol)
-    - [Drawing to the screen](#drawing-to-the-screen)
-    - [Color format](#color-format)
-    - [Performance optimizations](#performance-optimizations)
+  - [Initialization sequence](#initialization-sequence)
+  - [Communication protocol](#communication-protocol)
+  - [Drawing to the screen](#drawing-to-the-screen)
+  - [Color format](#color-format)
+  - [Performance optimizations](#performance-optimizations)
 - [What's next ?](#whats-next)
 - [The firmware](#plateformio-firmware)
 - [Install guide](#installation-guide)
@@ -48,8 +48,8 @@
 
 > Version i've bought :
 >
-> - Cube : https://www.aliexpress.com/item/1005007793281982.html
-> - SmallTV : https://www.aliexpress.com/item/1005008671174445.html
+> - Cube : <https://www.aliexpress.com/item/1005007793281982.html>
+> - SmallTV : <https://www.aliexpress.com/item/1005008671174445.html>
 
 - **MCU**: ESP8266
 - **LCD controller**: ST7789 (RGB565)
@@ -211,7 +211,7 @@ You can edit this JSON file to configure your firmware, for example by modifying
 
 ### 3. Build the firmware and filesystem
 
-If you dont use the devcontainer, make sure you have install and setup [PlateformIO](https://docs.platformio.org/en/latest/core/installation/methods/installer-script.html)
+To build the firmware you can use decontainer, docker or build it by yourself using [PlateformIO](https://docs.platformio.org/en/latest/core/installation/methods/installer-script.html)
 
 ```bash
 pio run && pio run --target buildfs
@@ -219,6 +219,9 @@ pio run && pio run --target buildfs
 # or using devcontainer aliases
 
 build && buildfs
+
+# or docker
+sh build-with-docker.sh
 ```
 
 The generated files will be located in:
