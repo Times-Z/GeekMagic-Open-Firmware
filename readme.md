@@ -46,9 +46,10 @@
 
 ## Teardown
 
-> Version i've bought : https://a.aliexpress.com/_EH3UQ0u
-
-> For the Smalltv : https://a.aliexpress.com/_EzEZgvi
+> Version i've bought :
+>
+> - Cube : https://www.aliexpress.com/item/1005007793281982.html
+> - SmallTV : https://www.aliexpress.com/item/1005008671174445.html
 
 - **MCU**: ESP8266
 - **LCD controller**: ST7789 (RGB565)
