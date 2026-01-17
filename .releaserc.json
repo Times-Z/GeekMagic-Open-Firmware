@@ -8,7 +8,14 @@
       {
         "assets": [
           { "path": ".pio/build/esp12e/*.elf", "label": "ELF Binary" },
-          { "path": ".pio/build/esp12e/*.bin", "label": "Binary Firmware" },
+          {
+            "path": ".pio/build/esp12e/firmware.bin",
+            "label": "Firmware binary"
+          },
+          {
+            "path": ".pio/build/esp12e/littlefs.bin",
+            "label": "LittleFS partition binary"
+          },
           { "path": ".pio/build/project.checksum", "label": "Project checksum" }
         ]
       }
