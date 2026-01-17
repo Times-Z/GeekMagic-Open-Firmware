@@ -55,14 +55,26 @@ jobs:
       - name: Install dependencies
         run: pio lib install
 
-      - name: Build firmware and filesystem
-        run: pio run && pio run --target buildfs
+      - name: Build firmware
+        run: pio run
 
-      - name: Upload artifacts
+      - name: Upload firmware artifact
         uses: actions/upload-artifact@v4
         with:
-          name: build-output
-          path: .pio
+          name: build-firmware
+          path: |
+            .pio/build/esp12e/firmware.bin
+            .pio/build/project.checksum
+          include-hidden-files: true
+
+      - name: Build filesystem
+        run: pio run --target buildfs
+
+      - name: Upload filesystem artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: build-filesystem
+          path: .pio/build/esp12e/littlefs.bin
           include-hidden-files: true
 
   package:
@@ -82,11 +94,18 @@ jobs:
         with:
           node-version: "20"
 
-      - name: Download artifacts
+      - name: Download firmware artifact
         uses: actions/download-artifact@v4
         with:
-          name: build-output
-          path: .pio/
+          name: build-firmware
+          path: ./artifacts/firmware
+          merge-multiple: true
+
+      - name: Download filesystem artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: build-filesystem
+          path: ./artifacts/filesystem
           merge-multiple: true
 
       - name: Install semantic-release and plugins
