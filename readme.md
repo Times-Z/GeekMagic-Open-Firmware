@@ -15,15 +15,15 @@
 - [Important information](#important-information)
 - [Teardown](#teardown)
 - [Screen hardware configuration](#screen-hardware-configuration)
-  - [Display specifications](#display-specifications)
-  - [Pin wiring](#pin-wiring)
-  - [Important configuration details](#important-configuration-details)
+    - [Display specifications](#display-specifications)
+    - [Pin wiring](#pin-wiring)
+    - [Important configuration details](#important-configuration-details)
 - [How the screen works](#how-the-screen-works)
-  - [Initialization sequence](#initialization-sequence)
-  - [Communication protocol](#communication-protocol)
-  - [Drawing to the screen](#drawing-to-the-screen)
-  - [Color format](#color-format)
-  - [Performance optimizations](#performance-optimizations)
+    - [Initialization sequence](#initialization-sequence)
+    - [Communication protocol](#communication-protocol)
+    - [Drawing to the screen](#drawing-to-the-screen)
+    - [Color format](#color-format)
+    - [Performance optimizations](#performance-optimizations)
 - [What's next ?](#whats-next)
 - [The firmware](#plateformio-firmware)
 - [Install guide](#installation-guide)
@@ -221,7 +221,8 @@ pio run && pio run --target buildfs
 build && buildfs
 
 # or docker
-sh build-with-docker.sh
+
+./scripts/build-with-docker.sh
 ```
 
 The generated files will be located in:
