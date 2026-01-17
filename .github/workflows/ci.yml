@@ -62,10 +62,7 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: build-output
-          path: |
-            .pio/build/esp12e/*.elf
-            .pio/build/esp12e/*.bin
-            .pio/build/project.checksum
+          path: .pio
 
   package:
     runs-on: ubuntu-latest
@@ -88,7 +85,7 @@ jobs:
         uses: actions/download-artifact@v4
         with:
           name: build-output
-          path: .pio/build
+          path: .pio
 
       - name: Install semantic-release and plugins
         run: npm install -g semantic-release @semantic-release/changelog @semantic-release/git @semantic-release/github
