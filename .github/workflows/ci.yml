@@ -62,7 +62,7 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: build-output
-          path: .pio
+          path: .pio/
 
   package:
     runs-on: ubuntu-latest
@@ -86,6 +86,7 @@ jobs:
         with:
           name: build-output
           path: .pio
+          merge-multiple: true
 
       - name: Install semantic-release and plugins
         run: npm install -g semantic-release @semantic-release/changelog @semantic-release/git @semantic-release/github
