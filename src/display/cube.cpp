@@ -94,14 +94,16 @@ auto Cube::draw(void) -> void {
 
     rotateCube(rotX, rotY, rotZ, cube);
 
+    g_lcd->startWrite();
+
     // draw the top and bottom squares
     for (int side = 0; side < 2; side++) {
         for (int i = 0; i < 4; i++) {
             pos = &cube[(4 * i) + (side * 5 * 4)];
             posNext = &cube[4 * (i + 1) + (side * 5 * 4)];
 
-            g_lcd->drawLine(scaleVectorToDraw(pos[0]), scaleVectorToDraw(pos[1]), scaleVectorToDraw(posNext[0]),
-                            scaleVectorToDraw(posNext[1]), LCD_WHITE);
+            g_lcd->writeLine(scaleVectorToDraw(pos[0]), scaleVectorToDraw(pos[1]), scaleVectorToDraw(posNext[0]),
+                             scaleVectorToDraw(posNext[1]), LCD_WHITE);
         }
     }
 
@@ -110,7 +112,9 @@ auto Cube::draw(void) -> void {
         pos = &cube[4 * p];
         posNext = &cube[4 * (p + 5)];
 
-        g_lcd->drawLine(scaleVectorToDraw(pos[0]), scaleVectorToDraw(pos[1]), scaleVectorToDraw(posNext[0]),
-                        scaleVectorToDraw(posNext[1]), LCD_WHITE);
+        g_lcd->writeLine(scaleVectorToDraw(pos[0]), scaleVectorToDraw(pos[1]), scaleVectorToDraw(posNext[0]),
+                         scaleVectorToDraw(posNext[1]), LCD_WHITE);
     }
+
+    g_lcd->endWrite();
 }
