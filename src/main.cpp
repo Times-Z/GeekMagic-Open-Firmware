@@ -8,6 +8,7 @@
 #include "config/ConfigManager.h"
 #include "wireless/WiFiManager.h"
 #include "display/DisplayManager.h"
+#include "display/cube.h"
 #include "web/Webserver.h"
 #include "web/Api.h"
 
@@ -24,6 +25,8 @@ static constexpr int LOADING_BAR_Y = 110;
 static constexpr int LOADING_DELAY_MS = 1000;
 
 Webserver* webserver = nullptr;
+
+displayMode_e displayMode = DISPLAY_MODE_NONE;
 
 /**
  * @brief Initializes the system
@@ -97,11 +100,12 @@ void setup() {
     delay(LOADING_DELAY_MS);
 
     DisplayManager::drawStartup(wifiManager->getIP().toString());
+    displayMode = DISPLAY_MODE_CUBE;
 }
 
 void loop() {
     if (webserver != nullptr) {
         webserver->handleClient();
     }
-    DisplayManager::update();
+    DisplayManager::update(displayMode);
 }

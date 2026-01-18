@@ -5,14 +5,18 @@
 #include "display/DisplayManager.h"
 #include "display/GeekMagicSPIBus.h"
 #include "config/ConfigManager.h"
+#include "wireless/WiFiManager.h"
 #include "display/Gif.h"
+#include "display/cube.h"
 
 static Gif s_gif;
+static Cube s_cube;
 
+extern WiFiManager* wifiManager;
 extern ConfigManager configManager;
 
 static Arduino_DataBus* g_lcdBus = nullptr;
-static Arduino_GFX* g_lcd = nullptr;
+Arduino_GFX* g_lcd = nullptr;
 static bool g_lcdReady = false;
 static bool g_lcdInitializing = false;
 static uint32_t g_lcdInitAttempts = 0;
@@ -740,7 +744,24 @@ auto DisplayManager::stopGif() -> bool {
     return true;
 }
 
-auto DisplayManager::update() -> void { s_gif.update(); }
+/**
+ * @brief Called per update loop in main, handles re-drawing the screen
+ */
+auto DisplayManager::update(displayMode_e mode) -> void {
+    switch (mode) {
+        case DISPLAY_MODE_GIF:
+            s_gif.update();
+            break;
+        case DISPLAY_MODE_CUBE:
+            clearScreen();
+            s_cube.setRotX(s_cube.rotX + 1);
+            s_cube.setRotY(s_cube.rotY + 2);
+            s_cube.draw();
+            break;
+        default:
+            break;
+    }
+}
 
 /**
  * @brief Clear the entire display to black

@@ -14,6 +14,12 @@ static constexpr int ONE_LINE_SPACE = 20;
 static constexpr int TWO_LINES_SPACE = 40;
 static constexpr int THREE_LINES_SPACE = 60;
 
+typedef enum {
+    DISPLAY_MODE_NONE,  // not any particular display mode, used for manually controlling the LCD
+    DISPLAY_MODE_GIF,   // displays a GIF
+    DISPLAY_MODE_CUBE   // displays a rotating cube
+} displayMode_e;
+
 class DisplayManager {
    public:
     static void begin();
@@ -27,6 +33,6 @@ class DisplayManager {
                                uint16_t fgColor = 0x07E0, uint16_t bgColor = 0x39E7);
     static bool playGifFullScreen(const String& path, uint32_t timeMs = 0);
     static bool stopGif();
-    static void update();
+    static void update(displayMode_e mode);
     static void clearScreen();
 };
