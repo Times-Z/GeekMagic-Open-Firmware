@@ -7,6 +7,8 @@ void registerApiEndpoints(Webserver* webserver);
 void handleOtaUpload(Webserver* webserver, int mode);
 void handleOtaFinished(Webserver* webserver);
 void handleReboot(Webserver* webserver);
+void handleOtaStatus(Webserver* webserver);
+void handleOtaCancel(Webserver* webserver);
 
 void handleGifUpload(Webserver* webserver);
 void handleListGifs(Webserver* webserver);

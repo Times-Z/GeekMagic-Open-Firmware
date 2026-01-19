@@ -1,4 +1,4 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="en">
   <head>
     <meta charset="UTF-8" />
@@ -25,7 +25,22 @@
             <button type="submit" x-bind:disabled="uploading">Upload</button>
           </form>
           <template x-if="uploading">
-            <span aria-busy="true" style="margin-left: 1em">Uploading...</span>
+            <div style="margin-top: 1em">
+              <label>Progress</label>
+              <progress max="100" :value="progress"></progress>
+              <div
+                style="
+                  display: flex;
+                  gap: 1em;
+                  align-items: center;
+                  margin-top: 0.5em;
+                "
+              >
+                <div><strong x-text="progress + '%'"></strong></div>
+                <div x-text="etaText"></div>
+                <button @click="cancelUpload" type="button">Cancel</button>
+              </div>
+            </div>
           </template>
           <p x-text="uploadMessage"></p>
         </div>

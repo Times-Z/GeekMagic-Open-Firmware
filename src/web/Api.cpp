@@ -18,9 +18,19 @@ ESP8266HTTPUpdateServer httpUpdater;
 static bool otaError = false;
 static size_t otaSize = 0;
 static String otaStatus;
+static volatile bool otaInProgress = false;
+static volatile bool otaCancelRequested = false;
+static size_t otaTotal = 0;
 
-static constexpr size_t JSON_DOC_WIFI_SCAN_SIZE = 4096;
-static constexpr size_t JSON_DOC_SMALL_SIZE = 1024;
+static constexpr int OTA_TEXT_X_OFFSET = 50;
+static constexpr int OTA_TEXT_Y_OFFSET = 80;
+static constexpr int OTA_LOADING_Y_OFFSET = 110;
+
+static void otaHandleStart(HTTPUpload& upload, int mode);
+static void otaHandleWrite(HTTPUpload& upload);
+static void otaHandleEnd(HTTPUpload& upload, int mode);
+static void otaHandleAborted(HTTPUpload& upload);
+
 static constexpr int WIFI_CONNECT_TIMEOUT_MS = 15000;
 
 /**
@@ -48,6 +58,9 @@ void registerApiEndpoints(Webserver* webserver) {
         "/api/v1/ota/fs", HTTP_POST, [webserver]() { handleOtaFinished(webserver); },
         [webserver]() { handleOtaUpload(webserver, U_FS); });
 
+    webserver->raw().on("/api/v1/ota/status", HTTP_GET, [webserver]() { handleOtaStatus(webserver); });
+    webserver->raw().on("/api/v1/ota/cancel", HTTP_POST, [webserver]() { handleOtaCancel(webserver); });
+
     webserver->raw().on(
         "/api/v1/gif", HTTP_POST, [webserver]() { handleGifUpload(webserver); },
         [webserver]() { handleGifUpload(webserver); });
@@ -56,6 +69,38 @@ void registerApiEndpoints(Webserver* webserver) {
     webserver->raw().on("/api/v1/gif/stop", HTTP_POST, [webserver]() { handleStopGif(webserver); });
 
     webserver->raw().on("/api/v1/gif", HTTP_GET, [webserver]() { handleListGifs(webserver); });
+}
+
+/**
+ * @brief OTA status endpoint
+ */
+void handleOtaStatus(Webserver* webserver) {
+    JsonDocument doc;
+    doc["inProgress"] = otaInProgress;
+    doc["bytesWritten"] = otaSize;
+    doc["totalBytes"] = otaTotal;
+    doc["error"] = otaError;
+    doc["message"] = otaStatus;
+
+    String json;
+    serializeJson(doc, json);
+    webserver->raw().send(HTTP_CODE_OK, "application/json", json);
+}
+
+/**
+ * @brief OTA cancel endpoint
+ */
+void handleOtaCancel(Webserver* webserver) {
+    otaCancelRequested = true;
+    otaStatus = "Cancel requested";
+
+    JsonDocument doc;
+    doc["status"] = "cancelling";
+    doc["message"] = "Cancel request received";
+
+    String json;
+    serializeJson(doc, json);
+    webserver->raw().send(HTTP_CODE_OK, "application/json", json);
 }
 
 /**
@@ -291,72 +336,18 @@ void handleOtaUpload(Webserver* webserver, int mode) {
     HTTPUpload& upload = webserver->raw().upload();
 
     switch (upload.status) {
-        case UPLOAD_FILE_START: {
-            Logger::info(("OTA start: " + upload.filename).c_str(), "API::OTA");
-
-            otaError = false;
-            otaSize = 0;
-            otaStatus = "";
-            int constexpr security_space = 0x1000;
-            u_int constexpr bin_mask = 0xFFFFF000;
-
-            FSInfo fs_info;
-            LittleFS.info(fs_info);
-            size_t fsSize = fs_info.totalBytes;
-            size_t maxSketchSpace =
-                (ESP.getFreeSketchSpace() - security_space) &  // NOLINT(readability-static-accessed-through-instance)
-                bin_mask;
-            size_t place = (mode == U_FS) ? fsSize : maxSketchSpace;
-
-            if (!Update.begin(place, mode)) {
-                otaError = true;
-                otaStatus = Update.getErrorString();
-                Logger::error(("Update.begin failed: " + otaStatus).c_str(), "API::OTA");
-            }
-
+        case UPLOAD_FILE_START:
+            otaHandleStart(upload, mode);
             break;
-        }
-
-        case UPLOAD_FILE_WRITE: {
-            if (!otaError) {
-                if (Update.write(upload.buf, upload.currentSize) != upload.currentSize) {
-                    otaError = true;
-                    otaStatus = Update.getErrorString();
-                    Logger::error(("Write failed: " + otaStatus).c_str(), "API::OTA");
-                }
-                otaSize += upload.currentSize;
-            }
-
+        case UPLOAD_FILE_WRITE:
+            otaHandleWrite(upload);
             break;
-        }
-
-        case UPLOAD_FILE_END: {
-            if (!otaError) {
-                if (Update.end(true)) {
-                    if (mode == U_FS) {
-                        Logger::info("OTA FS update complete, mounting file system...", "API::OTA");
-                        LittleFS.begin();
-                    }
-
-                    otaStatus = "Update OK (" + String(otaSize) + " bytes)";
-                    Logger::info(otaStatus.c_str(), "API::OTA");
-                } else {
-                    otaError = true;
-                    otaStatus = Update.getErrorString();
-                }
-            }
-
+        case UPLOAD_FILE_END:
+            otaHandleEnd(upload, mode);
             break;
-        }
-
-        case UPLOAD_FILE_ABORTED: {
-            Update.end();
-            otaError = true;
-            otaStatus = "Update aborted";
-
+        case UPLOAD_FILE_ABORTED:
+            otaHandleAborted(upload);
             break;
-        }
-
         default:
             break;
     }
@@ -378,6 +369,9 @@ void handleOtaFinished(Webserver* webserver) {
     if (otaError) {
         doc["status"] = "Error";
     }
+
+    otaInProgress = false;
+    otaCancelRequested = false;
 
     String json;
     serializeJson(doc, json);
@@ -580,4 +574,142 @@ void handleWifiStatus(Webserver* webserver) {
     serializeJson(resp, jsonOut);
 
     webserver->raw().send(HTTP_CODE_OK, "application/json", jsonOut);
+}
+
+/**
+ * @brief Handle OTA start
+ *
+ * @param upload Reference to the HTTPUpload object
+ * @param mode Update mode U_FLASH or U_FS
+ *
+ * @return void
+ */
+static void otaHandleStart(HTTPUpload& upload, int mode) {
+    Logger::info((String("OTA start: ") + upload.filename).c_str(), "API::OTA");
+
+    otaError = false;
+    otaSize = 0;
+    otaStatus = "";
+    otaInProgress = true;
+    otaCancelRequested = false;
+    otaTotal = static_cast<size_t>(upload.contentLength);
+
+    if (DisplayManager::isReady()) {
+        DisplayManager::clearScreen();
+        DisplayManager::drawTextWrapped(OTA_TEXT_X_OFFSET, OTA_TEXT_Y_OFFSET, "Uploading...", 2, LCD_WHITE, LCD_BLACK,
+                                        true);
+        DisplayManager::drawLoadingBar(0.0F, OTA_LOADING_Y_OFFSET);
+    }
+
+    int constexpr security_space = 0x1000;
+    u_int constexpr bin_mask = 0xFFFFF000;
+
+    FSInfo fs_info;
+    LittleFS.info(fs_info);
+    size_t fsSize = fs_info.totalBytes;
+    size_t maxSketchSpace =
+        (ESP.getFreeSketchSpace() - security_space) &  // NOLINT(readability-static-accessed-through-instance)
+        bin_mask;
+    size_t place = (mode == U_FS) ? fsSize : maxSketchSpace;
+
+    if (!Update.begin(place, mode)) {
+        otaError = true;
+        otaStatus = Update.getErrorString();
+        Logger::error((String("Update.begin failed: ") + otaStatus).c_str(), "API::OTA");
+    }
+}
+
+/**
+ * @brief Handle OTA write
+ *
+ * @param upload Reference to the HTTPUpload object
+ *
+ * @return void
+ */
+static void otaHandleWrite(HTTPUpload& upload) {
+    if (!otaError) {
+        if (otaCancelRequested) {
+            Update.end();
+            otaError = true;
+            otaStatus = "Update canceled";
+            otaInProgress = false;
+            Logger::warn("OTA canceled by user", "API::OTA");
+
+            if (DisplayManager::isReady()) {
+                DisplayManager::drawTextWrapped(OTA_TEXT_X_OFFSET, OTA_TEXT_Y_OFFSET, "Canceled", 2, LCD_WHITE,
+                                                LCD_BLACK, true);
+                DisplayManager::drawLoadingBar(0.0F, OTA_LOADING_Y_OFFSET);
+            }
+
+            return;
+        }
+
+        if (Update.write(upload.buf, upload.currentSize) != upload.currentSize) {
+            otaError = true;
+            otaStatus = Update.getErrorString();
+            Logger::error((String("Write failed: ") + otaStatus).c_str(), "API::OTA");
+        }
+
+        otaSize += upload.currentSize;
+
+        if (DisplayManager::isReady()) {
+            float progress = 0.0F;
+            if (otaTotal > 0) {
+                progress = static_cast<float>(otaSize) / static_cast<float>(otaTotal);
+            }
+
+            DisplayManager::drawLoadingBar(progress, OTA_LOADING_Y_OFFSET);
+        }
+    }
+}
+
+/**
+ * @brief Handle OTA end
+ *
+ * @param upload Reference to the HTTPUpload object
+ * @param mode Update mode U_FLASH or U_FS
+ *
+ * @return void
+ */
+static void otaHandleEnd(HTTPUpload& /*upload*/, int mode) {
+    if (!otaError) {
+        if (Update.end(true)) {
+            if (mode == U_FS) {
+                Logger::info("OTA FS update complete, mounting file system...", "API::OTA");
+                LittleFS.begin();
+            }
+
+            otaStatus = String("Update OK (") + String(otaSize) + " bytes)";
+            Logger::info(otaStatus.c_str(), "API::OTA");
+
+            if (DisplayManager::isReady()) {
+                DisplayManager::drawLoadingBar(1.0F, OTA_LOADING_Y_OFFSET);
+                DisplayManager::drawTextWrapped(OTA_TEXT_X_OFFSET, OTA_TEXT_Y_OFFSET, "Success!", 2, LCD_WHITE,
+                                                LCD_BLACK, true);
+            }
+        } else {
+            otaError = true;
+            otaStatus = Update.getErrorString();
+        }
+    }
+}
+
+/**
+ * @brief Handle OTA aborted
+ *
+ * @param upload Reference to the HTTPUpload object
+ *
+ * @return void
+ */
+static void otaHandleAborted(HTTPUpload& /*upload*/) {
+    Update.end();
+    otaError = true;
+    otaStatus = "Update aborted";
+    otaInProgress = false;
+    otaCancelRequested = false;
+
+    if (DisplayManager::isReady()) {
+        DisplayManager::drawTextWrapped(OTA_TEXT_X_OFFSET, OTA_TEXT_Y_OFFSET, "Aborted", 2, LCD_WHITE, LCD_BLACK, true);
+        DisplayManager::drawLoadingBar(0.0F, OTA_LOADING_Y_OFFSET);
+    }
 }
