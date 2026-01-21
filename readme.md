@@ -275,6 +275,15 @@ From there, select and flash the filesystem using the `littlefs.bin` file
 
 Once the device reboots, the setup is complete!
 
+Note: The Wi-Fi credentials in config.json are migrated to EEPROM “secure storage” on first boot. After that, the Wi-Fi credentials are erased from config.json
+
+Data stored in EEPROM (or flash-based EEPROM emulation) is not secure by default
+All values (API keys, Wi-Fi credentials, tokens, etc.) are currently stored in clear text and can be recovered by anyone with physical access to the device or the ability to read the flash memory
+
+This project does not provide hardware-backed security
+
+Do not assume confidentiality against a determined attacker
+
 ## License
 
 This project is licensed under the **GPLv3 License** - see the [LICENSE](LICENSE) file for details

@@ -54,7 +54,7 @@ void setup() {
     Serial.println("");
     Logger::info(("GeekMagic Open Firmware " + String(PROJECT_VER_STR)).c_str());
 
-    constexpr int TOTAL_STEPS = 5;
+    constexpr int TOTAL_STEPS = 6;
     int step = 0;
 
     if (!LittleFS.begin()) {
@@ -63,6 +63,12 @@ void setup() {
         }
         Logger::error("Failed to mount LittleFS");
         return;
+    }
+
+    step++;
+
+    if (configManager.secure.begin()) {
+        Logger::info("SecureStorage initialized successfully", "ConfigManager");
     }
 
     step++;
@@ -103,6 +109,7 @@ void setup() {
     webserver->serveStatic("/update.html", "/web/update.html", "text/html");
     webserver->serveStatic("/gif_upload.html", "/web/gif_upload.html", "text/html");
     webserver->serveStatic("/wifi.html", "/web/wifi.html", "text/html");
+    webserver->serveStatic("/config.json", "/config.json", "application/json");
 
     webserver->serveStatic("/css/pico.min.css", "/web/css/pico.min.css", "text/css");
     webserver->serveStatic("/css/style.css", "/web/css/style.css", "text/css");

@@ -21,6 +21,7 @@
 #define CONFIG_MANAGER_H
 
 #include <ArduinoJson.h>
+#include "config/SecureStorage.h"
 #include <string>
 #include <cstdint>
 
@@ -65,6 +66,7 @@ class ConfigManager {
     uint32_t getLCDSpiHz() const;
     int8_t getLCDBacklightGpio() const;
     bool getLCDBacklightActiveLow() const;
+    bool migrateWiFiToSecureStorage(String ssid, String password);
 
    public:
     bool getLCDEnableSafe() const { return lcd_enable; }
@@ -88,6 +90,7 @@ class ConfigManager {
     std::string ssid;
     std::string password;
     std::string filename;
+    SecureStorage secure;
     bool lcd_enable = true;
     int16_t lcd_w = 240;
     int16_t lcd_h = 240;

@@ -22,8 +22,9 @@
 
 #include <Logger.h>
 #include "config/ConfigManager.h"
+#include "config/SecureStorage.h"
 
-ConfigManager::ConfigManager(const char* filename) : filename(filename) {}
+ConfigManager::ConfigManager(const char* filename) : filename(filename), secure() {}
 
 /**
  * @brief Loads the configuration from a file stored in SPIFFS
@@ -61,25 +62,44 @@ auto ConfigManager::load() -> bool {
         return false;
     }
 
-    ssid = doc["wifi_ssid"].as<const char*>();
-    password = doc["wifi_password"].as<const char*>();
+    String ssid = doc["wifi_ssid"] | "";
+    String password = doc["wifi_password"] | "";
 
-    lcd_enable = doc["lcd_enable"] | lcd_enable;
-    lcd_w = doc["lcd_w"] | lcd_w;
-    lcd_h = doc["lcd_h"] | lcd_h;
-    lcd_rotation = doc["lcd_rotation"] | lcd_rotation;
-    lcd_mosi_gpio = doc["lcd_mosi_gpio"] | lcd_mosi_gpio;
-    lcd_sck_gpio = doc["lcd_sck_gpio"] | lcd_sck_gpio;
-    lcd_cs_gpio = doc["lcd_cs_gpio"] | lcd_cs_gpio;
-    lcd_dc_gpio = doc["lcd_dc_gpio"] | lcd_dc_gpio;
-    lcd_rst_gpio = doc["lcd_rst_gpio"] | lcd_rst_gpio;
-    lcd_cs_active_high = doc["lcd_cs_active_high"] | lcd_cs_active_high;
-    lcd_dc_cmd_high = doc["lcd_dc_cmd_high"] | lcd_dc_cmd_high;
-    lcd_spi_mode = doc["lcd_spi_mode"] | lcd_spi_mode;
-    lcd_keep_cs_asserted = doc["lcd_keep_cs_asserted"] | lcd_keep_cs_asserted;
-    lcd_spi_hz = doc["lcd_spi_hz"] | lcd_spi_hz;
-    lcd_backlight_gpio = doc["lcd_backlight_gpio"] | lcd_backlight_gpio;
-    lcd_backlight_active_low = doc["lcd_backlight_active_low"] | lcd_backlight_active_low;
+    this->lcd_enable = doc["lcd_enable"] | lcd_enable;
+    this->lcd_w = doc["lcd_w"] | lcd_w;
+    this->lcd_h = doc["lcd_h"] | lcd_h;
+    this->lcd_rotation = doc["lcd_rotation"] | lcd_rotation;
+    this->lcd_mosi_gpio = doc["lcd_mosi_gpio"] | lcd_mosi_gpio;
+    this->lcd_sck_gpio = doc["lcd_sck_gpio"] | lcd_sck_gpio;
+    this->lcd_cs_gpio = doc["lcd_cs_gpio"] | lcd_cs_gpio;
+    this->lcd_dc_gpio = doc["lcd_dc_gpio"] | lcd_dc_gpio;
+    this->lcd_rst_gpio = doc["lcd_rst_gpio"] | lcd_rst_gpio;
+    this->lcd_cs_active_high = doc["lcd_cs_active_high"] | lcd_cs_active_high;
+    this->lcd_dc_cmd_high = doc["lcd_dc_cmd_high"] | lcd_dc_cmd_high;
+    this->lcd_spi_mode = doc["lcd_spi_mode"] | lcd_spi_mode;
+    this->lcd_keep_cs_asserted = doc["lcd_keep_cs_asserted"] | lcd_keep_cs_asserted;
+    this->lcd_spi_hz = doc["lcd_spi_hz"] | lcd_spi_hz;
+    this->lcd_backlight_gpio = doc["lcd_backlight_gpio"] | lcd_backlight_gpio;
+    this->lcd_backlight_active_low = doc["lcd_backlight_active_low"] | lcd_backlight_active_low;
+
+    String nvs_ssid = secure.get("wifi_ssid", "");
+    String nvs_password = secure.get("wifi_password", "");
+
+    if ((ssid.length() != 0 && nvs_ssid.length() == 0) || (password.length() != 0 && nvs_password.length() == 0)) {
+        secure.put("wifi_ssid", ssid.c_str());
+        secure.put("wifi_password", password.c_str());
+
+        this->ssid = secure.get("wifi_ssid").c_str();
+        this->password = secure.get("wifi_password").c_str();
+
+        // Ensure we delete the wifi credentials from the json config after migrating
+        ConfigManager::save();
+
+        Logger::info("WiFi credentials migrated to SecureStorage", "ConfigManager");
+    } else {
+        this->ssid = secure.get("wifi_ssid").c_str();
+        this->password = secure.get("wifi_password").c_str();
+    }
 
     return true;
 }
@@ -226,6 +246,8 @@ auto ConfigManager::setWiFi(const char* newSsid, const char* newPassword) -> voi
 /**
  * @brief Save the current configuration to the file
  *
+ * @param clearWifiCreds If true wifi credentials will be cleared from json config
+ *
  * @return true if the configuration was successfully saved false otherwise
  */
 auto ConfigManager::save() -> bool {
@@ -245,11 +267,9 @@ auto ConfigManager::save() -> bool {
 
     JsonDocument doc;
 
-    doc["wifi_ssid"] = ssid.c_str();
-    doc["wifi_password"] = password.c_str();
-    doc["lcd_enable"] = lcd_enable;
-    doc["lcd_w"] = lcd_w;
-    doc["lcd_h"] = lcd_h;
+    secure.put("wifi_ssid", this->getSSID());
+    secure.put("wifi_password", this->getPassword());
+
     doc["lcd_rotation"] = lcd_rotation;
 
     if (serializeJson(doc, file) == 0) {
@@ -261,6 +281,24 @@ auto ConfigManager::save() -> bool {
 
     file.close();
     Logger::info("Configuration saved", "ConfigManager");
+
+    return true;
+}
+
+/**
+ * @brief Migrate WiFi credentials to SecureStorage
+ *
+ * @param ssid The SSID to store
+ * @param password The password to store
+ * @return true on success false on failure
+ */
+auto ConfigManager::migrateWiFiToSecureStorage(String ssid, String password) -> bool {
+    secure.put("wifi_ssid", ssid.c_str());
+    secure.put("wifi_password", password.c_str());
+
+    ConfigManager::save();
+
+    Logger::info("WiFi credentials migrated to SecureStorage", "ConfigManager");
 
     return true;
 }
