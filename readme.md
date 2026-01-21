@@ -209,6 +209,25 @@ cp data/config-{hellocubic|smalltv}.example data/config.json
 
 You can edit this JSON file to configure your firmware, for example by modifying `wifi_ssid` and `wifi_password` so that your device connects to your network
 
+Note: The Wi-Fi credentials in config.json are migrated to EEPROM “secure storage” on first boot. After that, the Wi-Fi credentials are erased from config.json
+
+Security of stored secrets:
+
+- All sensitive values (API keys, wifi credentials, tokens, etc.) are stored in EEPROM using a device-unique obfuscation scheme
+- The obfuscation key is derived from the ESP8266's MAC address, chip ID, and a salt (configurable [here](./src/main.cpp#L37) in code) using SHA-256
+- The JSON payload is XORed with this derived key before being written to EEPROM, and de-obfuscated on read
+- This makes it much harder to recover secrets from a raw flash dump on another device, or with only partial knowledge of the hardware
+
+Limitations:
+
+- This is not true encryption and does not provide hardware-backed security or protection against a determined attacker with full device access
+- The public salt is not secret; if an attacker knows the salt, MAC, and chip ID, they can reconstruct the key
+- There is no secure element or tamper resistance
+
+**Do not assume confidentiality against a determined attacker**
+
+Warning: If the salt, the chip ID or the mac address change, the eeprom secure storage is clear and reset to ensure no data leak is possible
+
 ### 3. Build the firmware and filesystem
 
 To build the firmware you can use decontainer, docker or build it by yourself using [PlateformIO](https://docs.platformio.org/en/latest/core/installation/methods/installer-script.html)
@@ -274,15 +293,6 @@ http://192.168.4.1/legacyupdate
 From there, select and flash the filesystem using the `littlefs.bin` file
 
 Once the device reboots, the setup is complete!
-
-Note: The Wi-Fi credentials in config.json are migrated to EEPROM “secure storage” on first boot. After that, the Wi-Fi credentials are erased from config.json
-
-Data stored in EEPROM (or flash-based EEPROM emulation) is not secure by default
-All values (API keys, Wi-Fi credentials, tokens, etc.) are currently stored in clear text and can be recovered by anyone with physical access to the device or the ability to read the flash memory
-
-This project does not provide hardware-backed security
-
-Do not assume confidentiality against a determined attacker
 
 ## License
 

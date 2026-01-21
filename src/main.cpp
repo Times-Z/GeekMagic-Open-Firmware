@@ -34,6 +34,7 @@ ConfigManager configManager;
 const char* AP_SSID = "GeekMagic";
 const char* AP_PASSWORD = "$str0ngPa$$w0rd";
 WiFiManager* wifiManager = nullptr;
+static String KV_SALT = "GeekMagicOpenFirmwareIsAwesome";
 
 static constexpr uint32_t SERIAL_BAUD_RATE = 115200;
 static constexpr uint32_t BOOT_DELAY_MS = 200;
@@ -66,6 +67,8 @@ void setup() {
     }
 
     step++;
+
+    SecureStorage::setSalt(KV_SALT);
 
     if (configManager.secure.begin()) {
         Logger::info("SecureStorage initialized successfully", "ConfigManager");

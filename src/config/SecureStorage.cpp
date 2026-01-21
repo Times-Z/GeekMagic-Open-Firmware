@@ -20,6 +20,9 @@
 #include <array>
 #include <EEPROM.h>
 #include <Logger.h>
+#include <ESP8266WiFi.h>
+#include <user_interface.h>
+#include <BearSSLHelpers.h>
 
 #include "config/SecureStorage.h"
 
@@ -28,6 +31,35 @@ static constexpr uint8_t LEN_SHIFT = 8;
 static constexpr uint8_t LEN_HIGH_IDX = 4;
 static constexpr uint8_t LEN_LOW_IDX = 5;
 static constexpr uint8_t LEN_MASK = 0xFF;
+static constexpr size_t KEY_LEN = 32;
+
+static String kvSalt;
+
+/**
+ * @brief Set the public salt used in key derivation
+ *
+ * @param salt The public salt string
+ */
+void SecureStorage::setSalt(const String& salt) { kvSalt = salt; }
+
+/**
+ * @brief Derive the obfuscation key from device-unique parameters and public salt
+ *
+ * @param out32 Output buffer for the 32-byte derived key
+ *
+ * @returns void
+ */
+static void deriveKey(uint8_t* out32) {
+    String mac = WiFi.macAddress();
+    uint32_t chip = system_get_chip_id();
+
+    String input = mac + String(chip) + kvSalt;
+
+    br_sha256_context ctx;
+    br_sha256_init(&ctx);
+    br_sha256_update(&ctx, (const unsigned char*)input.c_str(), input.length());
+    br_sha256_out(&ctx, out32);
+}
 
 SecureStorage::SecureStorage(size_t eepromSize) : _eepromSize(eepromSize), _doc() {}
 
@@ -105,6 +137,13 @@ auto const SecureStorage::loadToMemory() -> bool {
 
     buf[len] = '\0';
 
+    // De-obfuscate using derived key
+    std::array<uint8_t, KEY_LEN> key;
+    deriveKey(key.data());
+    for (uint16_t i = 0; i < len; ++i) {
+        buf[i] ^= key[static_cast<size_t>(i) % KEY_LEN];
+    }
+
     DeserializationError err = deserializeJson(_doc, buf);
 
     if (err) {
@@ -150,8 +189,12 @@ auto const SecureStorage::flushToEEPROM() -> bool {
     EEPROM.write(LEN_HIGH_IDX, static_cast<uint8_t>((len >> LEN_SHIFT) & LEN_MASK));
     EEPROM.write(LEN_LOW_IDX, static_cast<uint8_t>(len & LEN_MASK));
 
+    // Obfuscate using derived key
+    std::array<uint8_t, KEY_LEN> key;
+    deriveKey(key.data());
     for (uint16_t i = 0; i < len; ++i) {
-        EEPROM.write(static_cast<int>(headerSize + i), static_cast<uint8_t>(out.charAt(i)));
+        uint8_t obfuscatedString = out.charAt(i) ^ key[static_cast<size_t>(i) % KEY_LEN];
+        EEPROM.write(static_cast<int>(headerSize + i), obfuscatedString);
     }
 
     if (!EEPROM.commit()) {

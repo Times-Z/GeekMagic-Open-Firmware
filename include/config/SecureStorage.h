@@ -31,6 +31,9 @@ class SecureStorage {
     bool remove(const char* key);
     String get(const char* key, const char* defaultValue = nullptr);
 
+    // Set the public salt (should be called before begin())
+    static void setSalt(const String& salt);
+
    private:
     size_t _eepromSize;
     bool loadToMemory();
