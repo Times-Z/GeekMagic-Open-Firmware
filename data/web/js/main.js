@@ -112,6 +112,40 @@ function gifUploadHandler() {
       this.gifListLoaded = true;
     },
 
+    async deleteGif(gifName) {
+      if (!confirm(`Delete ${gifName}? This cannot be undone.`)) return;
+
+      try {
+        const res = await fetch("/api/v1/gif", {
+          method: "DELETE",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ name: gifName }),
+        });
+
+        if (!res.ok) {
+          let msg = await res.text().catch(() => "");
+          try {
+            const j = JSON.parse(msg || "{}");
+            msg = j.message || msg;
+          } catch (e) {
+            // ignore
+          }
+          alert("Delete failed: " + (msg || res.status));
+          return;
+        }
+
+        const j = await res.json().catch(() => ({}));
+        if (j.status && j.status === "success") {
+          await this.fetchGifList();
+          alert("Deleted: " + gifName);
+        } else {
+          alert("Delete failed: " + (j.message || "unknown"));
+        }
+      } catch (e) {
+        alert("Error deleting GIF: " + e);
+      }
+    },
+
     async init() {
       await this.fetchGifList();
     },

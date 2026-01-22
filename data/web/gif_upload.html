@@ -1,4 +1,4 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="en">
   <head>
     <meta charset="UTF-8" />
@@ -53,6 +53,12 @@
                       style="margin-left: 1em"
                     >
                       Play fullscreen
+                    </button>
+                    <button
+                      @click="deleteGif(gif.name)"
+                      style="margin-left: 0.5em; color: #b00"
+                    >
+                      Delete
                     </button>
                   </li>
                 </template>

@@ -49,6 +49,7 @@ static void otaHandleStart(HTTPUpload& upload, int mode);
 static void otaHandleWrite(HTTPUpload& upload);
 static void otaHandleEnd(HTTPUpload& upload, int mode);
 static void otaHandleAborted(HTTPUpload& upload);
+void handleDeleteGif(Webserver* webserver);
 
 static constexpr int WIFI_CONNECT_TIMEOUT_MS = 15000;
 
@@ -86,6 +87,7 @@ void registerApiEndpoints(Webserver* webserver) {
 
     webserver->raw().on("/api/v1/gif/play", HTTP_POST, [webserver]() { handlePlayGif(webserver); });
     webserver->raw().on("/api/v1/gif/stop", HTTP_POST, [webserver]() { handleStopGif(webserver); });
+    webserver->raw().on("/api/v1/gif", HTTP_DELETE, [webserver]() { handleDeleteGif(webserver); });
 
     webserver->raw().on("/api/v1/gif", HTTP_GET, [webserver]() { handleListGifs(webserver); });
 }
@@ -495,6 +497,84 @@ void handleStopGif(Webserver* webserver) {
     serializeJson(resp, jsonOut);
 
     webserver->raw().send(HTTP_CODE_OK, "application/json", jsonOut);
+}
+
+/**
+ * @brief Delete a GIF file from storage
+ */
+void handleDeleteGif(Webserver* webserver) {
+    String body = webserver->raw().arg("plain");
+    JsonDocument doc;
+    DeserializationError err = deserializeJson(doc, body);
+
+    if (err) {
+        JsonDocument resp;
+        resp["status"] = "error";
+        resp["message"] = "invalid json";
+
+        String jsonOut;
+
+        serializeJson(resp, jsonOut);
+        webserver->raw().send(HTTP_CODE_INTERNAL_ERROR, "application/json", jsonOut);
+
+        return;
+    }
+
+    const char* name = doc["name"];
+    if (name == nullptr || strlen(name) == 0) {
+        JsonDocument resp;
+        resp["status"] = "error";
+        resp["message"] = "missing name";
+
+        String jsonOut;
+
+        serializeJson(resp, jsonOut);
+        webserver->raw().send(HTTP_CODE_INTERNAL_ERROR, "application/json", jsonOut);
+
+        return;
+    }
+
+    String filename(name);
+    filename.replace("\\", "/");
+    filename = filename.substring(filename.lastIndexOf('/') + 1);
+    String path = String("/gif/") + filename;
+
+    if (!LittleFS.exists(path)) {
+        JsonDocument resp;
+        resp["status"] = "error";
+        resp["message"] = "file not found";
+
+        String jsonOut;
+
+        serializeJson(resp, jsonOut);
+        webserver->raw().send(HTTP_CODE_NOT_FOUND, "application/json", jsonOut);
+
+        return;
+    }
+
+    if (LittleFS.remove(path)) {
+        JsonDocument resp;
+        resp["status"] = "success";
+        resp["message"] = "file removed";
+        resp["file"] = path;
+
+        String jsonOut;
+        serializeJson(resp, jsonOut);
+
+        webserver->raw().send(HTTP_CODE_OK, "application/json", jsonOut);
+
+        Logger::info((String("Removed file: ") + path).c_str(), "API::GIF");
+    } else {
+        JsonDocument resp;
+        resp["status"] = "error";
+        resp["message"] = "failed to remove file";
+
+        String jsonOut;
+        serializeJson(resp, jsonOut);
+        webserver->raw().send(HTTP_CODE_INTERNAL_ERROR, "application/json", jsonOut);
+
+        Logger::error((String("Failed to remove file: ") + path).c_str(), "API::GIF");
+    }
 }
 
 /**
