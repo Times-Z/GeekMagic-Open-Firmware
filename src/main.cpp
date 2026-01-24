@@ -115,9 +115,18 @@ void setup() {
     webserver->serveStatic("/config.json", "/config.json", "application/json");
 
     webserver->serveStatic("/css/pico.min.css", "/web/css/pico.min.css", "text/css");
-    webserver->serveStatic("/css/style.css", "/web/css/style.css", "text/css");
     webserver->serveStatic("/js/alpinejs.min.js", "/web/js/alpinejs.min.js", "application/javascript");
+
+    webserver->serveStatic("/css/style.css", "/web/css/style.css", "text/css");
+
     webserver->serveStatic("/js/main.js", "/web/js/main.js", "application/javascript");
+
+    webserver->serveStatic("/js/utils.js", "/web/js/utils.js", "application/javascript");
+    webserver->serveStatic("/js/gifUploadHandler.js", "/web/js/gifUploadHandler.js", "application/javascript");
+    webserver->serveStatic("/js/otaUploadHandler.js", "/web/js/otaUploadHandler.js", "application/javascript");
+    webserver->serveStatic("/js/rebootHandler.js", "/web/js/rebootHandler.js", "application/javascript");
+    webserver->serveStatic("/js/themeSwitcher.js", "/web/js/themeSwitcher.js", "application/javascript");
+    webserver->serveStatic("/js/wifiHandler.js", "/web/js/wifiHandler.js", "application/javascript");
 
     if (DisplayManager::isReady()) {
         DisplayManager::drawLoadingBar(1.0F, LOADING_BAR_Y);
