@@ -30,6 +30,7 @@
 #include "display/DisplayManager.h"
 #include "web/Webserver.h"
 #include "web/Api.h"
+#include <array>
 
 ConfigManager configManager;
 const char* AP_SSID = "GeekMagic";
@@ -47,6 +48,38 @@ static constexpr int LOADING_BAR_Y = 110;
 static constexpr int LOADING_DELAY_MS = 1000;
 
 Webserver* webserver = nullptr;
+
+/**
+ * @brief Formats bytes into a human-readable string
+ *
+ * @param value Size in bytes
+ * @return Formatted string
+ */
+static auto formatBytes(size_t value) -> String {
+    constexpr std::array<const char*, 5> UNITS = {"B", "KB", "MB", "GB", "TB"};
+    auto UNITS_COUNT = static_cast<int>(UNITS.size());
+    constexpr double THRESHOLD = 1024.0;
+    constexpr int INITIAL_UNIT = 0;
+    constexpr size_t BUF_SIZE = 32;
+    constexpr const char* FRACTIONAL_FORMAT = "%.1f %s";
+    constexpr const char* INTEGER_FORMAT = "%u %s";
+
+    auto val = static_cast<double>(value);
+    int unit = INITIAL_UNIT;
+    while (val >= THRESHOLD && unit < UNITS_COUNT - 1) {
+        val /= THRESHOLD;
+        ++unit;
+    }
+
+    std::array<char, BUF_SIZE> buf{};
+    if (unit == INITIAL_UNIT) {
+        snprintf(buf.data(), buf.size(), INTEGER_FORMAT, static_cast<unsigned int>(value), UNITS[unit]);
+    } else {
+        snprintf(buf.data(), buf.size(), FRACTIONAL_FORMAT, val, UNITS[unit]);
+    }
+
+    return {buf.data()};
+}
 
 /**
  * @brief Initializes the system
@@ -143,9 +176,9 @@ void loop() {
 
     if (now - last_free_heap_log >= FREE_HEAP_LOG_INTERVAL_MS) {
         last_free_heap_log = now;
-        Logger::info((String("Free heap: ") +
-                      String(ESP.getFreeHeap()) +  // NOLINT(readability-static-accessed-through-instance)
-                      String(initial_free_heap) + String(")"))
-                         .c_str());
+        String msg = String("Free heap: ") +
+                     formatBytes(ESP.getFreeHeap()) +  // NOLINT(readability-static-accessed-through-instance)
+                     " (initial: " + formatBytes(initial_free_heap) + ")";
+        Logger::info(msg.c_str());
     }
 }
