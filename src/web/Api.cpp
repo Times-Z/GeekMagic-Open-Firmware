@@ -20,7 +20,6 @@
 #include <Arduino.h>
 #include <Logger.h>
 #include <ArduinoJson.h>
-#include <ESP8266HTTPUpdateServer.h>
 #include <Updater.h>
 
 #include "web/Webserver.h"
@@ -33,7 +32,6 @@
 extern ConfigManager configManager;
 extern WiFiManager* wifiManager;
 
-ESP8266HTTPUpdateServer httpUpdater;
 static bool otaError = false;
 static size_t otaSize = 0;
 static String otaStatus;
@@ -67,9 +65,6 @@ void registerApiEndpoints(Webserver* webserver) {
     webserver->raw().on("/api/v1/wifi/status", HTTP_GET, [webserver]() { handleWifiStatus(webserver); });
 
     webserver->raw().on("/api/v1/reboot", HTTP_POST, [webserver]() { handleReboot(webserver); });
-
-    // Just in case for now the old updater endpoint is still here
-    httpUpdater.setup(&webserver->raw(), "/legacyupdate");
 
     webserver->raw().on(
         "/api/v1/ota/fw", HTTP_POST, [webserver]() { handleOtaFinished(webserver); },

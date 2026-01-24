@@ -50,6 +50,7 @@ class Webserver {
     void on(const String& uri, std::function<void()> handler);
     void serveStatic(const String& uri, const String& path, const String& contentType = String(),
                      int cacheSeconds = 86400, bool tryGzip = true);
+    void registerStaticDir(const String& fsDir, const String& uriPrefix, const String& contentType);
     void onNotFound(std::function<void()> handler);
     ESP8266WebServer& raw();
 

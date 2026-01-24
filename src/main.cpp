@@ -21,6 +21,7 @@
 #include <LittleFS.h>
 #include <Arduino_GFX_Library.h>
 #include <SPI.h>
+#include <ESP8266HTTPUpdateServer.h>
 
 #include <Logger.h>
 #include "project_version.h"
@@ -34,6 +35,7 @@ ConfigManager configManager;
 const char* AP_SSID = "GeekMagic";
 const char* AP_PASSWORD = "$str0ngPa$$w0rd";
 WiFiManager* wifiManager = nullptr;
+ESP8266HTTPUpdateServer httpUpdater;
 static String KV_SALT = "GeekMagicOpenFirmwareIsAwesome";
 
 static constexpr uint32_t SERIAL_BAUD_RATE = 115200;
@@ -105,6 +107,8 @@ void setup() {
 
     registerApiEndpoints(webserver);
 
+    httpUpdater.setup(&webserver->raw(), "/legacyupdate");
+
     webserver->serveStatic("/", "/web/index.html", "text/html");
     webserver->serveStatic("/header.html", "/web/header.html", "text/html");
     webserver->serveStatic("/footer.html", "/web/footer.html", "text/html");
@@ -114,19 +118,8 @@ void setup() {
     webserver->serveStatic("/wifi.html", "/web/wifi.html", "text/html");
     webserver->serveStatic("/config.json", "/config.json", "application/json");
 
-    webserver->serveStatic("/css/pico.min.css", "/web/css/pico.min.css", "text/css");
-    webserver->serveStatic("/js/alpinejs.min.js", "/web/js/alpinejs.min.js", "application/javascript");
-
-    webserver->serveStatic("/css/style.css", "/web/css/style.css", "text/css");
-
-    webserver->serveStatic("/js/main.js", "/web/js/main.js", "application/javascript");
-
-    webserver->serveStatic("/js/utils.js", "/web/js/utils.js", "application/javascript");
-    webserver->serveStatic("/js/gifUploadHandler.js", "/web/js/gifUploadHandler.js", "application/javascript");
-    webserver->serveStatic("/js/otaUploadHandler.js", "/web/js/otaUploadHandler.js", "application/javascript");
-    webserver->serveStatic("/js/rebootHandler.js", "/web/js/rebootHandler.js", "application/javascript");
-    webserver->serveStatic("/js/themeSwitcher.js", "/web/js/themeSwitcher.js", "application/javascript");
-    webserver->serveStatic("/js/wifiHandler.js", "/web/js/wifiHandler.js", "application/javascript");
+    webserver->registerStaticDir("/web/css", "/css", "text/css");
+    webserver->registerStaticDir("/web/js", "/js", "application/javascript");
 
     if (DisplayManager::isReady()) {
         DisplayManager::drawLoadingBar(1.0F, LOADING_BAR_Y);

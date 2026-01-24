@@ -157,6 +157,59 @@ void Webserver::serveStatic(const String& uri, const String& path, const String&
 }
 
 /**
+ * @brief Register all files in a LittleFS directory as static routes
+ * @param fsDir The LittleFS directory path
+ * @param uriPrefix The URI prefix to use
+ * @param contentType The content type to use for all files
+ *
+ * @return void
+ */
+void Webserver::registerStaticDir(const String& fsDir, const String& uriPrefix, const String& contentType) {
+    String dirPath = fsDir;
+    if (dirPath.endsWith("/") && dirPath.length() > 1) {
+        dirPath = dirPath.substring(0, dirPath.length() - 1);
+    }
+
+    String prefix = uriPrefix;
+    if (!prefix.endsWith("/")) {
+        prefix += "/";
+    }
+
+    Dir dir = LittleFS.openDir(dirPath);
+
+    while (dir.next()) {
+        String name = dir.fileName();
+        String base = name.substring(name.lastIndexOf('/') + 1);
+
+        if (base.length() == 0) {
+            continue;
+        }
+
+        String uri = prefix + base;
+        String path = dirPath + String("/") + base;
+
+        if (!LittleFS.exists(path)) {
+            continue;
+        }
+
+        File file = LittleFS.open(path, "r");
+        if (!file) {
+            continue;
+        }
+
+        if (file.isDirectory()) {
+            file.close();
+
+            continue;
+        }
+        file.close();
+
+        serveStatic(uri, path, contentType);
+        Logger::info((String("Registered static: ") + uri + " -> " + path).c_str(), "Webserver");
+    }
+}
+
+/**
  * @brief Simple notFound handler registration
  * @param handler The function to call when a route is not found
  *

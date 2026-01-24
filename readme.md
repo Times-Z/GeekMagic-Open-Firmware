@@ -214,7 +214,7 @@ Note: The Wi-Fi credentials in config.json are migrated to EEPROM “secure stor
 Security of stored secrets:
 
 - All sensitive values (API keys, wifi credentials, tokens, etc.) are stored in EEPROM using a device-unique obfuscation scheme
-- The obfuscation key is derived from the ESP8266's MAC address, chip ID, and a salt (configurable [here](./src/main.cpp#L37) in code) using SHA-256
+- The obfuscation key is derived from the ESP8266's MAC address, chip ID, and a salt (configurable [here](./src/main.cpp#L39) in code) using SHA-256
 - The JSON payload is XORed with this derived key before being written to EEPROM, and de-obfuscated on read
 - This makes it much harder to recover secrets from a raw flash dump on another device, or with only partial knowledge of the hardware
 
