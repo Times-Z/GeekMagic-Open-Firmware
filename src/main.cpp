@@ -37,6 +37,7 @@ const char* AP_PASSWORD = "$str0ngPa$$w0rd";
 WiFiManager* wifiManager = nullptr;
 ESP8266HTTPUpdateServer httpUpdater;
 static String KV_SALT = "GeekMagicOpenFirmwareIsAwesome";
+uint32_t initial_free_heap = ESP.getFreeHeap();  // NOLINT(readability-static-accessed-through-instance)
 
 static constexpr uint32_t SERIAL_BAUD_RATE = 115200;
 static constexpr uint32_t BOOT_DELAY_MS = 200;
@@ -135,4 +136,16 @@ void loop() {
         webserver->handleClient();
     }
     DisplayManager::update();
+
+    static unsigned long last_free_heap_log = 0;
+    static constexpr unsigned long FREE_HEAP_LOG_INTERVAL_MS = 10000UL;
+    unsigned long now = millis();
+
+    if (now - last_free_heap_log >= FREE_HEAP_LOG_INTERVAL_MS) {
+        last_free_heap_log = now;
+        Logger::info((String("Free heap: ") +
+                      String(ESP.getFreeHeap()) +  // NOLINT(readability-static-accessed-through-instance)
+                      String(initial_free_heap) + String(")"))
+                         .c_str());
+    }
 }

@@ -22,6 +22,8 @@
 #include <LittleFS.h>
 #include <functional>
 #include <Logger.h>
+#include <cstring>
+#include <cstdlib>
 
 #include "web/Webserver.h"
 
@@ -31,7 +33,15 @@
  *
  * @return void
  */
-Webserver::Webserver(uint16_t port) : _server(port) {}
+Webserver::~Webserver()  // NOLINT(modernize-use-equals-default)
+{
+    for (char* p : _staticAllocations) {
+        if (p) free(p);
+    }
+    _staticAllocations.clear();
+}
+
+Webserver::Webserver(uint16_t port) : _server(port), _lastHeapLogMillis(0) {}
 
 /**
  * @brief Initializes the LittleFS filesystem
@@ -157,6 +167,69 @@ void Webserver::serveStatic(const String& uri, const String& path, const String&
 }
 
 /**
+ * @brief Serve a static file from LittleFS using C-strings. If a .gz variant exists, serve it with gzip encoding
+ * @param uriC The URL path
+ * @param pathC The filesystem path
+ * @param contentTypeC The content type to use. If nullptr or empty string, it will be derived from the file extension
+ * @param cacheSeconds The number of seconds to cache the file (0 = no-cache)
+ * @param tryGzip Whether to try serving a .gz variant if it exists
+ *
+ * @return void
+ */
+void Webserver::serveStaticC(const char* uriC, const char* pathC, const char* contentTypeC, int cacheSeconds,
+                             bool tryGzip) {
+    _server.on(uriC, HTTP_GET, [this, pathC, contentTypeC, cacheSeconds, tryGzip, uriC]() {
+        String fsPath = String(pathC);
+        String enc = "";
+        String servePath = fsPath;
+
+        if (tryGzip) {
+            String gzPath = fsPath + String(".gz");
+            if (LittleFS.exists(gzPath)) {
+                servePath = gzPath;
+                enc = "gzip";
+            }
+        }
+
+        if (!LittleFS.exists(servePath)) {
+            Logger::error((String("File not found: ") + servePath).c_str(), "Webserver");
+            _server.send(HTTP_CODE_NOT_FOUND, "text/plain", "Not found");
+
+            return;
+        }
+
+        File f = LittleFS.open(servePath, "r");
+        if (!f) {
+            Logger::error((String("Failed to open file: ") + servePath).c_str(), "Webserver");
+            _server.send(HTTP_CODE_INTERNAL_ERROR, "text/plain", "Open failed");
+
+            return;
+        }
+
+        size_t size = f.size();
+
+        String ct = String(contentTypeC == nullptr ? "" : contentTypeC);
+        if (ct.length() == 0) ct = guessContentType(fsPath);
+
+        if (cacheSeconds > 0) {
+            _server.sendHeader("Cache-Control", String("public, max-age=") + String(cacheSeconds));
+        } else {
+            _server.sendHeader("Cache-Control", "no-cache, no-store, must-revalidate");
+        }
+
+        if (enc.length()) {
+            _server.sendHeader("Content-Encoding", enc);
+        }
+
+        _server.setContentLength(size);
+        _server.streamFile(f, ct);
+        f.close();
+
+        Logger::info((String("Served ") + servePath + " for URI: " + String(uriC)).c_str(), "Webserver");
+    });
+}
+
+/**
  * @brief Register all files in a LittleFS directory as static routes
  * @param fsDir The LittleFS directory path
  * @param uriPrefix The URI prefix to use
@@ -204,7 +277,15 @@ void Webserver::registerStaticDir(const String& fsDir, const String& uriPrefix, 
         }
         file.close();
 
-        serveStatic(uri, path, contentType);
+        char* uri_c = strdup(uri.c_str());
+        char* path_c = strdup(path.c_str());
+        char* ct_c = strdup(contentType.c_str());
+
+        _staticAllocations.push_back(uri_c);
+        _staticAllocations.push_back(path_c);
+        _staticAllocations.push_back(ct_c);
+
+        serveStaticC(uri_c, path_c, ct_c);
         Logger::info((String("Registered static: ") + uri + " -> " + path).c_str(), "Webserver");
     }
 }
