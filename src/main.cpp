@@ -38,7 +38,9 @@ const char* AP_PASSWORD = "$str0ngPa$$w0rd";
 WiFiManager* wifiManager = nullptr;
 ESP8266HTTPUpdateServer httpUpdater;
 static String KV_SALT = "GeekMagicOpenFirmwareIsAwesome";
-uint32_t initial_free_heap = ESP.getFreeHeap();  // NOLINT(readability-static-accessed-through-instance)
+static size_t initial_free_heap = 0;
+static constexpr size_t FREE_BUF_SIZE = 32;
+static constexpr size_t MSG_BUF_SIZE = 96;
 
 static constexpr uint32_t SERIAL_BAUD_RATE = 115200;
 static constexpr uint32_t BOOT_DELAY_MS = 200;
@@ -55,30 +57,22 @@ Webserver* webserver = nullptr;
  * @param value Size in bytes
  * @return Formatted string
  */
-static auto formatBytes(size_t value) -> String {
+static void formatBytes(size_t value, char* outBuf, size_t outBufSize) {
     constexpr std::array<const char*, 5> UNITS = {"B", "KB", "MB", "GB", "TB"};
-    auto UNITS_COUNT = static_cast<int>(UNITS.size());
     constexpr double THRESHOLD = 1024.0;
-    constexpr int INITIAL_UNIT = 0;
-    constexpr size_t BUF_SIZE = 32;
-    constexpr const char* FRACTIONAL_FORMAT = "%.1f %s";
-    constexpr const char* INTEGER_FORMAT = "%u %s";
 
     auto val = static_cast<double>(value);
-    int unit = INITIAL_UNIT;
-    while (val >= THRESHOLD && unit < UNITS_COUNT - 1) {
+    int unit = 0;
+    while (val >= THRESHOLD && unit < static_cast<int>(UNITS.size()) - 1) {
         val /= THRESHOLD;
         ++unit;
     }
 
-    std::array<char, BUF_SIZE> buf{};
-    if (unit == INITIAL_UNIT) {
-        snprintf(buf.data(), buf.size(), INTEGER_FORMAT, static_cast<unsigned int>(value), UNITS[unit]);
+    if (unit == 0) {
+        snprintf(outBuf, outBufSize, "%u %s", static_cast<unsigned int>(value), UNITS[unit]);
     } else {
-        snprintf(buf.data(), buf.size(), FRACTIONAL_FORMAT, val, UNITS[unit]);
+        snprintf(outBuf, outBufSize, "%.1f %s", val, UNITS[unit]);
     }
-
-    return {buf.data()};
 }
 
 /**
@@ -134,6 +128,8 @@ void setup() {
 
     webserver = new Webserver();
     webserver->begin();
+    // capture initial free heap after core subsystems initialized
+    initial_free_heap = ESP.getFreeHeap();  // NOLINT(readability-static-accessed-through-instance)
     if (DisplayManager::isReady()) {
         DisplayManager::drawLoadingBar((float)step / TOTAL_STEPS, LOADING_BAR_Y);
     }
@@ -143,14 +139,14 @@ void setup() {
 
     httpUpdater.setup(&webserver->raw(), "/legacyupdate");
 
-    webserver->serveStatic("/", "/web/index.html", "text/html");
-    webserver->serveStatic("/header.html", "/web/header.html", "text/html");
-    webserver->serveStatic("/footer.html", "/web/footer.html", "text/html");
-    webserver->serveStatic("/index.html", "/web/index.html", "text/html");
-    webserver->serveStatic("/update.html", "/web/update.html", "text/html");
-    webserver->serveStatic("/gif_upload.html", "/web/gif_upload.html", "text/html");
-    webserver->serveStatic("/wifi.html", "/web/wifi.html", "text/html");
-    webserver->serveStatic("/config.json", "/config.json", "application/json");
+    webserver->serveStaticC("/", "/web/index.html", "text/html");
+    webserver->serveStaticC("/header.html", "/web/header.html", "text/html");
+    webserver->serveStaticC("/footer.html", "/web/footer.html", "text/html");
+    webserver->serveStaticC("/index.html", "/web/index.html", "text/html");
+    webserver->serveStaticC("/update.html", "/web/update.html", "text/html");
+    webserver->serveStaticC("/gif_upload.html", "/web/gif_upload.html", "text/html");
+    webserver->serveStaticC("/wifi.html", "/web/wifi.html", "text/html");
+    webserver->serveStaticC("/config.json", "/config.json", "application/json");
 
     webserver->registerStaticDir("/web/css", "/css", "text/css");
     webserver->registerStaticDir("/web/js", "/js", "application/javascript");
@@ -176,9 +172,15 @@ void loop() {
 
     if (now - last_free_heap_log >= FREE_HEAP_LOG_INTERVAL_MS) {
         last_free_heap_log = now;
-        String msg = String("Free heap: ") +
-                     formatBytes(ESP.getFreeHeap()) +  // NOLINT(readability-static-accessed-through-instance)
-                     " (initial: " + formatBytes(initial_free_heap) + ")";
-        Logger::info(msg.c_str());
+        char freeBuf[FREE_BUF_SIZE];
+        char initBuf[FREE_BUF_SIZE];
+        char msgBuf[MSG_BUF_SIZE];
+
+        formatBytes(ESP.getFreeHeap(), freeBuf,
+                    sizeof(freeBuf));  // NOLINT(readability-static-accessed-through-instance)
+        formatBytes(initial_free_heap, initBuf, sizeof(initBuf));
+
+        snprintf(msgBuf, sizeof(msgBuf), "Free heap: %s (initial: %s)", freeBuf, initBuf);
+        Logger::info(msgBuf);
     }
 }

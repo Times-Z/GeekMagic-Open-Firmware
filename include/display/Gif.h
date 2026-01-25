@@ -62,6 +62,9 @@ class Gif {
 
     String m_currentPath;
 
+    File m_file;
+    bool m_fileInUse = false;
+
     bool m_havePrev = false;
     uint8_t m_prevDisposal = 0;
     bool m_prevHadTransparency = false;

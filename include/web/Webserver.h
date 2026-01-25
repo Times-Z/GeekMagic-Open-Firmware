@@ -49,8 +49,6 @@ class Webserver {
     void handleClient();
     void on(const String& uri, HTTPMethod method, std::function<void()> handler);
     void on(const String& uri, std::function<void()> handler);
-    void serveStatic(const String& uri, const String& path, const String& contentType = String(),
-                     int cacheSeconds = 86400, bool tryGzip = true);
     void serveStaticC(const char* uriC, const char* pathC, const char* contentTypeC = nullptr, int cacheSeconds = 86400,
                       bool tryGzip = true);
     void registerStaticDir(const String& fsDir, const String& uriPrefix, const String& contentType);
@@ -60,14 +58,8 @@ class Webserver {
 
    private:
     ESP8266WebServer _server;
-    // Holds allocated C-strings for static route registrations so
-    // lambdas can capture small pointers instead of copying Strings.
-    std::vector<char*> _staticAllocations;
-
-    // Periodic heap logging state
-    unsigned long _lastHeapLogMillis;
-    unsigned long _heapLogIntervalMs;
-    unsigned long _initialFreeHeap;
+    std::vector<char*> _staticAllocPools;
+    std::vector<char*> _staticAllocFallbackPtrs;
 
     void logHeapIfNeeded();
 

@@ -72,29 +72,30 @@ auto Gif::begin() -> bool {
  * @return void* Handle to the opened file
  */
 auto Gif::gifOpenFile(const char* fname, int32_t* pSize) -> void* {
-    String path(fname);
+    if (s_instance == nullptr) {
+        return nullptr;
+    }
 
+    String path(fname);
     if (!path.startsWith("/")) {
         path = "/" + path;
     }
 
-    auto* filePtr = new File();
-
-    if (filePtr == nullptr) {
+    if (s_instance->m_fileInUse) {
         return nullptr;
     }
 
-    *filePtr = LittleFS.open(path, "r");
-
-    if (!(*filePtr)) {
-        delete filePtr;
+    s_instance->m_file = LittleFS.open(path, "r");
+    if (!s_instance->m_file) {
+        s_instance->m_fileInUse = false;
 
         return nullptr;
     }
 
-    *pSize = static_cast<int32_t>(filePtr->size());
+    s_instance->m_fileInUse = true;
+    *pSize = static_cast<int32_t>(s_instance->m_file.size());
 
-    return reinterpret_cast<void*>(filePtr);
+    return reinterpret_cast<void*>(&s_instance->m_file);
 }
 
 /**
@@ -103,17 +104,17 @@ auto Gif::gifOpenFile(const char* fname, int32_t* pSize) -> void* {
  * @param pHandle Handle to the file to close
  */
 auto Gif::gifCloseFile(void* pHandle) -> void {
-    auto* filePtr = reinterpret_cast<File*>(pHandle);
+    (void)pHandle;
 
-    if (filePtr == nullptr) {
+    if (s_instance == nullptr) {
         return;
     }
 
-    if (*filePtr) {
-        filePtr->close();
+    if (s_instance->m_fileInUse && s_instance->m_file) {
+        s_instance->m_file.close();
     }
 
-    delete filePtr;
+    s_instance->m_fileInUse = false;
 }
 
 /**
@@ -352,6 +353,8 @@ auto Gif::gifDraw(GIFDRAW* pDraw) -> void  // NOLINT(readability-function-cognit
                     tft->writeAddrWindow(static_cast<int16_t>(uStart), static_cast<int16_t>(yPos),
                                          static_cast<uint16_t>(uLen), 1);
                     tft->writePixels(reinterpret_cast<uint16_t*>(lineBuf.data()), static_cast<uint32_t>(uLen));
+
+                    yield();
                 } else {
                     if (needClearLine) {
                         for (int i = 0; i < uLen; i++) {
@@ -377,6 +380,9 @@ auto Gif::gifDraw(GIFDRAW* pDraw) -> void  // NOLINT(readability-function-cognit
                         tft->writeAddrWindow(static_cast<int16_t>(uStart), static_cast<int16_t>(yPos),
                                              static_cast<uint16_t>(uLen), 1);
                         tft->writePixels(reinterpret_cast<uint16_t*>(lineBuf.data()), static_cast<uint32_t>(uLen));
+
+                        yield();
+                        yield();
                     } else {
                         const auto transparentIndex = static_cast<uint8_t>(pDraw->ucTransparent);
                         const auto* const sPtr = src + visStart;
@@ -405,6 +411,8 @@ auto Gif::gifDraw(GIFDRAW* pDraw) -> void  // NOLINT(readability-function-cognit
                                                  static_cast<uint16_t>(runLen), 1);
                             tft->writePixels(reinterpret_cast<uint16_t*>(lineBuf.data()),
                                              static_cast<uint32_t>(runLen));
+
+                            yield();
                         }
                     }
                 }
@@ -488,6 +496,11 @@ auto Gif::update() -> void {
         m_playing = false;
         m_playRequested = false;
         m_stopRequested = false;
+
+        // Important to release resources
+        delete m_gif;
+        m_gif = nullptr;
+
         return;
     }
 
@@ -502,6 +515,9 @@ auto Gif::update() -> void {
     const int result = m_gif->playFrame(false, &delayMsFromGif, nullptr);
     m_frameCount++;
     m_lastFrameMs = now;
+
+    // Let background tasks run
+    yield();
 
     if (result <= 0) {
         if (m_loopEnabled && !m_stopRequested && !m_currentPath.isEmpty()) {

@@ -35,13 +35,22 @@
  */
 Webserver::~Webserver()  // NOLINT(modernize-use-equals-default)
 {
-    for (char* p : _staticAllocations) {
-        if (p) free(p);
+    for (char* p : _staticAllocFallbackPtrs) {
+        if (p != nullptr) {
+            free(p);
+        }
     }
-    _staticAllocations.clear();
+    _staticAllocFallbackPtrs.clear();
+
+    for (char* pool : _staticAllocPools) {
+        if (pool != nullptr) {
+            free(pool);
+        }
+    }
+    _staticAllocPools.clear();
 }
 
-Webserver::Webserver(uint16_t port) : _server(port), _lastHeapLogMillis(0) {}
+Webserver::Webserver(uint16_t port) : _server(port) {}
 
 /**
  * @brief Initializes the LittleFS filesystem
@@ -104,69 +113,6 @@ void Webserver::on(const String& uri, std::function<void()> handler) {
 }
 
 /**
- * @brief Serve a static file from LittleFS. If a .gz variant exists, serve it with gzip encoding.
- * @param uri The URL path (e.g. "/index.html")
- * @param path The filesystem path (e.g. "/www/index.html")
- * @param contentType The content type to use. If empty, it will be derived from the file extension.
- * @param cacheSeconds The number of seconds to cache the file (0 = no-cache)
- * @param tryGzip Whether to try serving a .gz variant if it exists
- *
- * @return void
- */
-void Webserver::serveStatic(const String& uri, const String& path, const String& contentType, int cacheSeconds,
-                            bool tryGzip) {
-    _server.on(uri.c_str(), HTTP_GET, [this, path, contentType, cacheSeconds, tryGzip, uri]() {
-        String fsPath = path;
-        String enc = "";
-        String servePath = fsPath;
-
-        if (tryGzip) {
-            String gzPath = fsPath + String(".gz");
-            if (LittleFS.exists(gzPath)) {
-                servePath = gzPath;
-                enc = "gzip";
-            }
-        }
-
-        if (!LittleFS.exists(servePath)) {
-            Logger::error(("File not found: " + servePath).c_str(), "Webserver");
-            _server.send(HTTP_CODE_NOT_FOUND, "text/plain", "Not found");
-
-            return;
-        }
-
-        File f = LittleFS.open(servePath, "r");
-        if (!f) {
-            Logger::error(("Failed to open file: " + servePath).c_str(), "Webserver");
-            _server.send(HTTP_CODE_INTERNAL_ERROR, "text/plain", "Open failed");
-
-            return;
-        }
-
-        size_t size = f.size();
-
-        String ct = contentType;
-        if (ct.length() == 0) ct = guessContentType(fsPath);
-
-        if (cacheSeconds > 0) {
-            _server.sendHeader("Cache-Control", String("public, max-age=") + String(cacheSeconds));
-        } else {
-            _server.sendHeader("Cache-Control", "no-cache, no-store, must-revalidate");
-        }
-
-        if (enc.length()) {
-            _server.sendHeader("Content-Encoding", enc);
-        }
-
-        _server.setContentLength(size);
-        _server.streamFile(f, ct);
-        f.close();
-
-        Logger::info(("Served " + servePath + " for URI: " + uri).c_str(), "Webserver");
-    });
-}
-
-/**
  * @brief Serve a static file from LittleFS using C-strings. If a .gz variant exists, serve it with gzip encoding
  * @param uriC The URL path
  * @param pathC The filesystem path
@@ -179,53 +125,71 @@ void Webserver::serveStatic(const String& uri, const String& path, const String&
 void Webserver::serveStaticC(const char* uriC, const char* pathC, const char* contentTypeC, int cacheSeconds,
                              bool tryGzip) {
     _server.on(uriC, HTTP_GET, [this, pathC, contentTypeC, cacheSeconds, tryGzip, uriC]() {
-        String fsPath = String(pathC);
-        String enc = "";
-        String servePath = fsPath;
+        char servePath[256];
+        char gzPath[260];
+        const char* chosenPath = pathC;
+        const char* contentTypeStr = contentTypeC;
 
+        // compute gz path if requested
         if (tryGzip) {
-            String gzPath = fsPath + String(".gz");
-            if (LittleFS.exists(gzPath)) {
-                servePath = gzPath;
-                enc = "gzip";
+            size_t l = strnlen(pathC, sizeof(servePath) - 1);
+            if (l + 4 < sizeof(gzPath)) {
+                memcpy(gzPath, pathC, l);
+                gzPath[l] = '\0';
+                strcat(gzPath, ".gz");
+                if (LittleFS.exists(gzPath)) {
+                    chosenPath = gzPath;
+                }
             }
         }
 
-        if (!LittleFS.exists(servePath)) {
-            Logger::error((String("File not found: ") + servePath).c_str(), "Webserver");
+        if (!LittleFS.exists(chosenPath)) {
+            char msg[256];
+            snprintf(msg, sizeof(msg), "File not found: %s", chosenPath);
+            Logger::error(msg, "Webserver");
             _server.send(HTTP_CODE_NOT_FOUND, "text/plain", "Not found");
-
             return;
         }
 
-        File f = LittleFS.open(servePath, "r");
+        File f = LittleFS.open(chosenPath, "r");
         if (!f) {
-            Logger::error((String("Failed to open file: ") + servePath).c_str(), "Webserver");
+            char msg[256];
+            snprintf(msg, sizeof(msg), "Failed to open file: %s", chosenPath);
+            Logger::error(msg, "Webserver");
             _server.send(HTTP_CODE_INTERNAL_ERROR, "text/plain", "Open failed");
-
             return;
         }
 
         size_t size = f.size();
 
-        String ct = String(contentTypeC == nullptr ? "" : contentTypeC);
-        if (ct.length() == 0) ct = guessContentType(fsPath);
+        char ctBuf[64] = {0};
+        if (contentTypeStr != nullptr && contentTypeStr[0] != '\0') {
+            strncpy(ctBuf, contentTypeStr, sizeof(ctBuf) - 1);
+        } else {
+            String guessed = guessContentType(String(chosenPath));
+            strncpy(ctBuf, guessed.c_str(), sizeof(ctBuf) - 1);
+        }
 
         if (cacheSeconds > 0) {
-            _server.sendHeader("Cache-Control", String("public, max-age=") + String(cacheSeconds));
+            char headerVal[64];
+            snprintf(headerVal, sizeof(headerVal), "public, max-age=%d", cacheSeconds);
+            _server.sendHeader("Cache-Control", String(headerVal));
         } else {
             _server.sendHeader("Cache-Control", "no-cache, no-store, must-revalidate");
         }
 
-        if (enc.length()) {
-            _server.sendHeader("Content-Encoding", enc);
+        // Content-Encoding header when gz served
+        if (chosenPath == gzPath) {
+            _server.sendHeader("Content-Encoding", "gzip");
         }
 
         _server.setContentLength(size);
-        _server.streamFile(f, ct);
+        _server.streamFile(f, String(ctBuf));
         f.close();
 
-        Logger::info((String("Served ") + servePath + " for URI: " + String(uriC)).c_str(), "Webserver");
+        char infoMsg[256];
+        snprintf(infoMsg, sizeof(infoMsg), "Served %s for URI: %s", chosenPath, uriC);
+        Logger::info(infoMsg, "Webserver");
     });
 }
 
@@ -237,7 +201,9 @@ void Webserver::serveStaticC(const char* uriC, const char* pathC, const char* co
  *
  * @return void
  */
-void Webserver::registerStaticDir(const String& fsDir, const String& uriPrefix, const String& contentType) {
+void Webserver::registerStaticDir(
+    const String& fsDir, const String& uriPrefix,
+    const String& contentType) {  // NOLINT(readability-convert-member-functions-to-static)
     String dirPath = fsDir;
     if (dirPath.endsWith("/") && dirPath.length() > 1) {
         dirPath = dirPath.substring(0, dirPath.length() - 1);
@@ -249,6 +215,14 @@ void Webserver::registerStaticDir(const String& fsDir, const String& uriPrefix, 
     }
 
     Dir dir = LittleFS.openDir(dirPath);
+
+    struct Entry {
+        String uri;
+        String path;
+        String ct;
+    };
+
+    std::vector<Entry> entries;
 
     while (dir.next()) {
         String name = dir.fileName();
@@ -272,22 +246,75 @@ void Webserver::registerStaticDir(const String& fsDir, const String& uriPrefix, 
 
         if (file.isDirectory()) {
             file.close();
-
             continue;
         }
         file.close();
 
-        char* uri_c = strdup(uri.c_str());
-        char* path_c = strdup(path.c_str());
-        char* ct_c = strdup(contentType.c_str());
+        entries.push_back(Entry{uri, path, contentType});
+    }
 
-        _staticAllocations.push_back(uri_c);
-        _staticAllocations.push_back(path_c);
-        _staticAllocations.push_back(ct_c);
+    if (entries.empty()) {
+        return;
+    }
+
+    // Compute total size for a single pooled allocation
+    size_t total = 0;
+    for (const auto& e : entries) {
+        total += e.uri.length() + 1;
+        total += e.path.length() + 1;
+        total += e.ct.length() + 1;
+    }
+
+    char* pool = static_cast<char*>(malloc(total));
+    if (pool == nullptr) {
+        // fallback to previous behavior if allocation fails
+        for (const auto& e : entries) {
+            char* uri_c = strdup(e.uri.c_str());
+            char* path_c = strdup(e.path.c_str());
+            char* ct_c = strdup(e.ct.c_str());
+
+            _staticAllocFallbackPtrs.push_back(uri_c);
+            _staticAllocFallbackPtrs.push_back(path_c);
+            _staticAllocFallbackPtrs.push_back(ct_c);
+
+            serveStaticC(uri_c, path_c, ct_c);
+            Logger::info((String("Registered static: ") + e.uri + " -> " + e.path).c_str(), "Webserver");
+        }
+
+        return;
+    }
+
+    // copy strings into pool and register routes
+    char* cur = pool;
+    for (const auto& e : entries) {
+        size_t l;
+
+        l = e.uri.length();
+        memcpy(cur, e.uri.c_str(), l);
+        cur[l] = '\0';
+        char* uri_c = cur;
+        cur += (l + 1);
+
+        l = e.path.length();
+        memcpy(cur, e.path.c_str(), l);
+        cur[l] = '\0';
+        char* path_c = cur;
+        cur += (l + 1);
+
+        l = e.ct.length();
+        memcpy(cur, e.ct.c_str(), l);
+        cur[l] = '\0';
+        char* ct_c = cur;
+        cur += (l + 1);
+
+        // pointers live inside the pool; keep the pool alive below
 
         serveStaticC(uri_c, path_c, ct_c);
-        Logger::info((String("Registered static: ") + uri + " -> " + path).c_str(), "Webserver");
+        Logger::info((String("Registered static: ") + e.uri + " -> " + e.path).c_str(), "Webserver");
     }
+
+    // Keep pool alive until destructor
+    _staticAllocPools.push_back(pool);
 }
 
 /**

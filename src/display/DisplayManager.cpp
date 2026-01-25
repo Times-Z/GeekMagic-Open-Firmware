@@ -19,6 +19,8 @@
 
 #include <SPI.h>
 #include <Logger.h>
+#include <array>
+#include <algorithm>
 
 #include "project_version.h"
 #include "display/DisplayManager.h"
@@ -41,6 +43,104 @@ static constexpr uint32_t LCD_HARDWARE_RESET_DELAY_MS = 100;
 static constexpr uint32_t LCD_BEGIN_DELAY_MS = 10;
 static constexpr int16_t DISPLAY_PADDING = 10;
 static constexpr int16_t DISPLAY_INFO_Y = 100;
+
+static constexpr int WRAP_MAX_CHARS = 128;
+static constexpr int WRAP_MAX_LINE_SLOTS = 10;
+
+/**
+ * @brief Push the current line buffer into the output lines array
+ *
+ * @param outLines The output lines array
+ * @param lineBuf The current line buffer
+ * @param lineLen The current line length
+ * @param lineCount The current line count
+ * @param maxLines The maximum number of lines allowed
+ *
+ * @return void
+ */
+static void wrapPushLine(std::array<std::array<char, WRAP_MAX_CHARS>, WRAP_MAX_LINE_SLOTS>& outLines,
+                         std::array<char, WRAP_MAX_CHARS>& lineBuf, int& lineLen, int& lineCount, int maxLines) {
+    if (lineCount >= maxLines) {
+        return;
+    }
+
+    lineBuf[lineLen] = '\0';
+    strncpy(outLines[lineCount].data(), lineBuf.data(), WRAP_MAX_CHARS - 1);
+    outLines[lineCount][WRAP_MAX_CHARS - 1] = '\0';
+    ++lineCount;
+
+    lineLen = 0;
+    lineBuf[0] = '\0';
+}
+
+/**
+ * @brief Append a word to the current line buffer, wrapping if necessary
+ *
+ * @param outLines The output lines array
+ * @param lineBuf The current line buffer
+ * @param lineLen The current line length
+ * @param wordBuf The word buffer to append
+ * @param wordLen The word length
+ * @param maxCharsPerLine The maximum characters per line
+ * @param lineCount The current line count
+ * @param maxLines The maximum number of lines allowed
+ *
+ * @return void
+ */
+static void wrapAppendWord(std::array<std::array<char, WRAP_MAX_CHARS>, WRAP_MAX_LINE_SLOTS>& outLines,
+                           std::array<char, WRAP_MAX_CHARS>& lineBuf, int& lineLen,
+                           std::array<char, WRAP_MAX_CHARS>& wordBuf, int& wordLen, int maxCharsPerLine, int& lineCount,
+                           int maxLines) {
+    if (wordLen == 0) {
+        return;
+    }
+
+    if (wordLen > maxCharsPerLine) {
+        if (lineLen != 0) {
+            wrapPushLine(outLines, lineBuf, lineLen, lineCount, maxLines);
+            if (lineCount >= maxLines) {
+                wordLen = 0;
+
+                return;
+            }
+        }
+        int copyLen = (wordLen > maxCharsPerLine) ? maxCharsPerLine : wordLen;
+        memcpy(lineBuf.data(), wordBuf.data(), static_cast<size_t>(copyLen));
+        lineLen = copyLen;
+        wordLen = 0;
+        wordBuf[0] = '\0';
+
+        return;
+    }
+    if (lineLen == 0) {
+        memcpy(lineBuf.data(), wordBuf.data(), static_cast<size_t>(wordLen));
+        lineLen = wordLen;
+        wordLen = 0;
+        wordBuf[0] = '\0';
+
+        return;
+    }
+    if ((lineLen + 1 + wordLen) <= maxCharsPerLine) {
+        lineBuf[lineLen] = ' ';
+        memcpy(lineBuf.data() + lineLen + 1, wordBuf.data(), static_cast<size_t>(wordLen));
+        lineLen += 1 + wordLen;
+        wordLen = 0;
+        wordBuf[0] = '\0';
+
+        return;
+    }
+    wrapPushLine(outLines, lineBuf, lineLen, lineCount, maxLines);
+    if (lineCount >= maxLines) {
+        wordLen = 0;
+
+        return;
+    }
+
+    memcpy(lineBuf.data(), wordBuf.data(), static_cast<size_t>(wordLen));
+    lineLen = wordLen;
+    wordLen = 0;
+    wordBuf[0] = '\0';
+}
 
 // Screen cmd
 static constexpr uint8_t ST7789_SLEEP_DELAY_MS = 120;
@@ -394,146 +494,78 @@ static void lcdEnsureInit() {
 }
 
 /**
- * @brief Wrap the given text into lines that fit into the available area
+ * @brief Wrap text into lines fitting within max characters and lines
  *
- * @return a vector of wrapped lines (at least one empty line when input is empty)
+ * @param text The input text to wrap
+ * @param maxCharsPerLine Maximum characters allowed per line
+ * @param maxLines Maximum number of lines allowed
+ * @param outLines Output array to hold the wrapped lines
+ *
+ * @return The number of lines used
  */
-static void lcdPushLine(std::vector<String>& out, String& line, int maxLines, int maxSlots) {
-    if ((int)out.size() >= maxLines || (int)out.size() >= maxSlots) {
-        Logger::warn("Max lines or slots reached", "DisplayManager");
+static auto lcdWrapTextToBuffer(const String& text, int maxCharsPerLine, int maxLines,
+                                std::array<std::array<char, WRAP_MAX_CHARS>, WRAP_MAX_LINE_SLOTS>& outLines) -> int {
+    int lineCount = 0;
 
-        return;
-    }
-    out.push_back(line);
-    line = "";
-}
-
-/**
- * @brief helper to append a word into the current line or push lines as needed
- *
- * @return void
- */
-static void lcdAppendWord(std::vector<String>& out, String& line, String& word, int maxCharsPerLine, int maxLines,
-                          int maxSlots) {
-    if (word.length() == 0U) {
-        Logger::warn("No word to append", "DisplayManager");
-
-        return;
+    for (auto& row : outLines) {
+        row[0] = '\0';
     }
 
-    if ((int)word.length() > maxCharsPerLine) {
-        if (line.length() != 0U) {
-            lcdPushLine(out, line, maxLines, maxSlots);
-            if ((int)out.size() >= maxLines || (int)out.size() >= maxSlots) {
-                word = "";
-                Logger::warn("Max lines or slots reached", "DisplayManager");
-
-                return;
-            }
-        }
-
-        line = word;
-        word = "";
-
-        return;
-    }
-
-    if (line.length() == 0U) {
-        line = word;
-        word = "";
-
-        return;
-    }
-
-    if ((int)(line.length() + 1 + word.length()) <= maxCharsPerLine) {
-        line += ' ';
-        line += word;
-        word = "";
-
-        return;
-    }
-
-    lcdPushLine(out, line, maxLines, maxSlots);
-    if ((int)out.size() >= maxLines || (int)out.size() >= maxSlots) {
-        word = "";
-        return;
-    }
-    line = word;
-    word = "";
-}
-
-/**
- * @brief Wrap the given text into lines that fit into the available area
- *
- * @param startX Starting X coordinate in pixels
- * @param startY Starting Y coordinate in pixels
- * @param text The text to wrap
- * @param textSize Font size multiplier (integer)
- * @param screenW Total screen width in pixels
- * @param screenH Total screen height in pixels
- *
- * @return a vector of wrapped lines (at least one empty line when input is empty)
- */
-static auto lcdWrapText(int16_t startX, int16_t startY, const String& text, uint8_t textSize, int16_t screenW,
-                        int16_t screenH) -> std::vector<String> {
-    constexpr int MAX_LINE_SLOTS = 10;
-
-    const auto charW = static_cast<int16_t>(6 * textSize);
-    const auto charH = static_cast<int16_t>(8 * textSize);
-    if (charW <= 0 || charH <= 0) {
-        return {String()};
-    }
-
-    const int maxCharsPerLine = (screenW - startX) / charW;
-    const int maxLines = (screenH - startY) / charH;
-
-    if (maxCharsPerLine <= 0 || maxLines <= 0) {
-        Logger::warn("No space for text", "DisplayManager");
-
-        return {String()};
-    }
-
-    std::vector<String> out;
-    out.reserve(std::min(maxLines, MAX_LINE_SLOTS));
-
-    String line;
-    String word;
+    std::array<char, WRAP_MAX_CHARS> lineBuf{};
+    std::array<char, WRAP_MAX_CHARS> wordBuf{};
+    int lineLen = 0;
+    int wordLen = 0;
 
     for (uint32_t i = 0; i < text.length(); ++i) {
         char chr = text.charAt(i);
+
         if (chr == '\r') {
             continue;
         }
+
         if (chr == '\n') {
-            lcdAppendWord(out, line, word, maxCharsPerLine, maxLines, MAX_LINE_SLOTS);
-            lcdPushLine(out, line, maxLines, MAX_LINE_SLOTS);
+            wrapAppendWord(outLines, lineBuf, lineLen, wordBuf, wordLen, maxCharsPerLine, lineCount, maxLines);
+            wrapPushLine(outLines, lineBuf, lineLen, lineCount, maxLines);
+
+            if (lineCount >= maxLines) {
+                break;
+            }
+
             continue;
         }
+
         if (chr == ' ' || chr == '\t') {
-            lcdAppendWord(out, line, word, maxCharsPerLine, maxLines, MAX_LINE_SLOTS);
+            wrapAppendWord(outLines, lineBuf, lineLen, wordBuf, wordLen, maxCharsPerLine, lineCount, maxLines);
+
+            if (lineCount >= maxLines) {
+                break;
+            }
+
             continue;
         }
-        word += chr;
+
+        if (wordLen + 1 < WRAP_MAX_CHARS) {
+            wordBuf[wordLen++] = chr;
+            wordBuf[wordLen] = '\0';
+        }
     }
 
-    lcdAppendWord(out, line, word, maxCharsPerLine, maxLines, MAX_LINE_SLOTS);
+    wrapAppendWord(outLines, lineBuf, lineLen, wordBuf, wordLen, maxCharsPerLine, lineCount, maxLines);
 
-    if (line.length() != 0U && (int)out.size() < maxLines && (int)out.size() < MAX_LINE_SLOTS) {
-        out.push_back(line);
-    }
-    if (out.empty()) {
-        out.push_back(String());
+    if (lineLen != 0 && lineCount < maxLines) {
+        wrapPushLine(outLines, lineBuf, lineLen, lineCount, maxLines);
     }
 
-    return out;
+    if (lineCount == 0) {
+        outLines[0][0] = '\0';
+        lineCount = 1;
+    }
+
+    return lineCount;
 }
 
 /**
  * @brief Draw text on the display with simple word-wrapping
- *
- * - Ensures the display is initialized before drawing
- *
- * - Wraps words to fit the remaining width and limits the number of lines to avoid overflowing the screen
  *
  * @param startX Starting X coordinate in pixels
  * @param startY Starting Y coordinate in pixels
@@ -542,6 +574,8 @@ static auto lcdWrapText(int16_t startX, int16_t startY, const String& text, uint
  * @param fgColor Foreground color (16-bit RGB565)
  * @param bgColor Background color (16-bit RGB565)
  * @param clearBg If true, clears the background rectangle before drawing
+ *
+ * @return void
  */
 static void lcdDrawTextWrapped(int16_t startX, int16_t startY, const String& text, uint8_t textSize, uint16_t fgColor,
                                uint16_t bgColor, bool clearBg) {
@@ -551,6 +585,7 @@ static void lcdDrawTextWrapped(int16_t startX, int16_t startY, const String& tex
     if (startX < 0) {
         startX = 0;
     }
+
     if (startY < 0) {
         startY = 0;
     }
@@ -563,26 +598,39 @@ static void lcdDrawTextWrapped(int16_t startX, int16_t startY, const String& tex
 
     const auto charW = static_cast<int16_t>(6 * textSize);
     const auto charH = static_cast<int16_t>(8 * textSize);
-
     if (charW <= 0 || charH <= 0) {
         Logger::warn("Invalid character dimensions", "DisplayManager");
 
         return;
     }
 
-    auto lines = lcdWrapText(startX, startY, text, textSize, screenW, screenH);
+    int maxCharsPerLine = (screenW - startX) / charW;
+    int maxLines = (screenH - startY) / charH;
+    if (maxCharsPerLine <= 0 || maxLines <= 0) {
+        Logger::warn("No space for text", "DisplayManager");
+
+        return;
+    }
+
+    if (maxLines > WRAP_MAX_LINE_SLOTS) {
+        maxLines = WRAP_MAX_LINE_SLOTS;
+    }
+
+    std::array<std::array<char, WRAP_MAX_CHARS>, WRAP_MAX_LINE_SLOTS> lines{};
+    int lineCount = lcdWrapTextToBuffer(text, maxCharsPerLine, maxLines, lines);
 
     if (clearBg) {
-        const auto heightPixels = static_cast<int16_t>(static_cast<int>(lines.size()) * static_cast<int>(charH));
+        const auto heightPixels = static_cast<int16_t>(static_cast<int>(lineCount) * static_cast<int>(charH));
         g_lcd->fillRect(startX, startY, static_cast<int16_t>(screenW - startX), static_cast<int16_t>(heightPixels),
                         bgColor);
     }
 
     g_lcd->setTextSize(textSize);
     g_lcd->setTextColor(fgColor, bgColor);
-    for (size_t li = 0; li < lines.size(); ++li) {
-        g_lcd->setCursor(startX, static_cast<int16_t>(startY + static_cast<int>(li) * static_cast<int>(charH)));
-        g_lcd->print(lines[li]);
+
+    for (int li = 0; li < lineCount; ++li) {
+        g_lcd->setCursor(startX, static_cast<int16_t>(startY + li * charH));
+        g_lcd->print(lines[li].data());
     }
 }
 
