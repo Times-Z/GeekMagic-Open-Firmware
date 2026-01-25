@@ -628,9 +628,33 @@ auto Gif::playAllFromLittleFS() -> bool {
 }
 
 /**
- * @brief Stop GIF playback
+ * @brief Stop GIF playback (immediate)
  */
-auto Gif::stop() -> void { m_stopRequested = true; }
+auto Gif::stop() -> void {
+    // Clear any pending stop request flag
+    m_stopRequested = false;
+
+    // If the GIF object exists, close and free it
+    if (m_gif != nullptr) {
+        // Attempt to close the animated GIF stream
+        m_gif->close();
+
+        // Release the AnimatedGIF instance
+        delete m_gif;
+        m_gif = nullptr;
+    }
+
+    // Close underlying file if still open
+    if (m_fileInUse && m_file) {
+        m_file.close();
+        m_fileInUse = false;
+    }
+
+    // Reset playback flags
+    m_playing = false;
+    m_playRequested = false;
+    m_loopEnabled = false;
+}
 
 /**
  * @brief Check if a GIF is currently playing

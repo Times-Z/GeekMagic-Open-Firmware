@@ -144,19 +144,19 @@ void Webserver::serveStaticC(const char* uriC, const char* pathC, const char* co
         }
 
         if (!LittleFS.exists(chosenPath)) {
-            char msg[256];
-            snprintf(msg, sizeof(msg), "File not found: %s", chosenPath);
-            Logger::error(msg, "Webserver");
+            String msg = String("File not found: ") + chosenPath;
+            Logger::error(msg.c_str(), "Webserver");
             _server.send(HTTP_CODE_NOT_FOUND, "text/plain", "Not found");
+
             return;
         }
 
         File f = LittleFS.open(chosenPath, "r");
         if (!f) {
-            char msg[256];
-            snprintf(msg, sizeof(msg), "Failed to open file: %s", chosenPath);
-            Logger::error(msg, "Webserver");
+            String msg = String("Failed to open file: ") + chosenPath;
+            Logger::error(msg.c_str(), "Webserver");
             _server.send(HTTP_CODE_INTERNAL_ERROR, "text/plain", "Open failed");
+
             return;
         }
 
@@ -187,9 +187,8 @@ void Webserver::serveStaticC(const char* uriC, const char* pathC, const char* co
         _server.streamFile(f, String(ctBuf));
         f.close();
 
-        char infoMsg[256];
-        snprintf(infoMsg, sizeof(infoMsg), "Served %s for URI: %s", chosenPath, uriC);
-        Logger::info(infoMsg, "Webserver");
+        String infoMsg = String("Served ") + chosenPath + " for URI: " + uriC;
+        Logger::info(infoMsg.c_str(), "Webserver");
     });
 }
 
@@ -201,9 +200,8 @@ void Webserver::serveStaticC(const char* uriC, const char* pathC, const char* co
  *
  * @return void
  */
-void Webserver::registerStaticDir(
-    const String& fsDir, const String& uriPrefix,
-    const String& contentType) {  // NOLINT(readability-convert-member-functions-to-static)
+void Webserver::registerStaticDir(  // NOLINT(readability-convert-member-functions-to-static)
+    const String& fsDir, const String& uriPrefix, const String& contentType) {
     String dirPath = fsDir;
     if (dirPath.endsWith("/") && dirPath.length() > 1) {
         dirPath = dirPath.substring(0, dirPath.length() - 1);

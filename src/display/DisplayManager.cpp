@@ -755,6 +755,9 @@ void DisplayManager::drawLoadingBar(float progress, int yPos, int barWidth, int 
  * @return true if played successfully, false on error
  */
 auto DisplayManager::playGifFullScreen(const String& path, uint32_t timeMs) -> bool {
+    // Ensure any currently playing GIF is stopped so we can start a new one
+    s_gif.stop();
+
     if (!s_gif.begin()) {
         return false;
     }

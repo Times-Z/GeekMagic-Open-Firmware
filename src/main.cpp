@@ -176,8 +176,8 @@ void loop() {
         char initBuf[FREE_BUF_SIZE];
         char msgBuf[MSG_BUF_SIZE];
 
-        formatBytes(ESP.getFreeHeap(), freeBuf,
-                    sizeof(freeBuf));  // NOLINT(readability-static-accessed-through-instance)
+        formatBytes(ESP.getFreeHeap(), freeBuf,  // NOLINT(readability-static-accessed-through-instance)
+                    sizeof(freeBuf));
         formatBytes(initial_free_heap, initBuf, sizeof(initBuf));
 
         snprintf(msgBuf, sizeof(msgBuf), "Free heap: %s (initial: %s)", freeBuf, initBuf);
