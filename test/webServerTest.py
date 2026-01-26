@@ -1,7 +1,7 @@
 """
 This spawns a webserver with API callbacks meant to emulate a device
-
-Can be used to test the webpage separately from the ESP
+Can be used to test the webpage separately from the ESP8266
+This file should be ran from this local directory
 
 Partially ChatGPT generated, with human oversight
 """
@@ -13,9 +13,13 @@ import sys
 import threading
 import time
 
-HOST = 'localhost'
-PORT = 8080
-BASE_PATH = '../data/web'
+########## variables to customize
+HOST = 'localhost'              # the webserver host
+PORT = 8080                     # the webserver port
+BASE_PATH = '../data/web'       # the base path for the webserver. setup to point to this repo's web folder
+
+
+########## begin code
 
 class InfoClass():
     def __init__(self):
@@ -94,6 +98,7 @@ class Handler(SimpleHTTPRequestHandler):
             return self._json(payload={"status": 'connected', "ssid": ssid, 'ip': ip})
         elif p == "/api/v1/reboot":
             print("Requested to reboot!")
+            return self._json(payload={"status": 'rebooting'})
         else:
             return self._json(404, {"ok": False, "error": "unknown route"})
     
@@ -155,8 +160,8 @@ if __name__ == "__main__":
     info = InfoClass()
 
     info.set('d.wifiConnDelay', 1)          # to simulate the wifi connection delay
-    info.set('d.responseDelay', 0)        # to simulate a slower network response
-    # info.set('d.responseDelay', 0.1)        # to simulate a slower network response
+    info.set('d.responseDelay', 0)          # to simulate a slower network response
+    # info.set('d.responseDelay', 0.1)      # to simulate a slower network response
     info.set('d.getActionDelay', 0.5)       # to simulate the esp8266 doing stuff on a task/action
 
     info.set('wifi.ip', '1.2.3.4')
