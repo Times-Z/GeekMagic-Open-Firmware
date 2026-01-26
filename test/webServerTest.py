@@ -19,15 +19,7 @@ BASE_PATH = '../data/web'
 
 class InfoClass():
     def __init__(self):
-        self.info = {
-            'wifiIP': '1.2.3.4',
-            'wifiConnected': True,
-            'wifiSSID': 'TestSSID',
-            'wifi.networks': [
-                {'ssid': 'ABC', 'rssi': 0, 'enc': 7}, 
-                {'ssid': 'Hi There!', 'rssi': -50, 'enc': 5}
-            ]
-        }
+        self.info = {}
         self.lock = threading.Lock()
     
     def set(self, key, val):
@@ -62,14 +54,21 @@ class Handler(SimpleHTTPRequestHandler):
         p = urlparse(self.path).path
         # print(f"Made GET request: {p}")        # todo: debug
 
+        time.sleep(info.get('d.responseDelay'))
+
         if p == "/api/v1/wifi/status":
+            time.sleep(info.get('d.getActionDelay'))
             return self._json(payload={
-                'connected': info.get('wifiConnected'),
-                'ssid': info.get('wifiSSID'),
-                'ip': info.get('wifiIP'),
+                'connected': info.get('wifi.connected'),
+                'ssid': info.get('wifi.ssid'),
+                'ip': info.get('wifi.ip'),
             })
         elif p == "/api/v1/wifi/scan":
+            time.sleep(info.get('d.getActionDelay'))
             return self._json(payload=info.get('wifi.networks'))
+        elif p == "/api/v1/gif":
+            time.sleep(info.get('d.getActionDelay'))
+            return self._json(payload=info.get('gif.list'))
         else:
             return super().do_GET()
 
@@ -79,18 +78,39 @@ class Handler(SimpleHTTPRequestHandler):
         length = int(self.headers.get("Content-Length", 0))
         body = self.rfile.read(length)
 
+        time.sleep(info.get('d.responseDelay'))
+
         if p == "/api/v1/wifi/connect":
-            data = parse_qs(body.decode(errors="ignore"))
-            ssid = (data.get("ssid") or ['NONE'])[0]
+            data = json.loads(body)
+            print(data)
+            ssid = (data.get("ssid") or '')
+            passw = (data.get("password") or '')
             ip = "4.5.6.7"
-            print(f"Attempted to connect to SSID {ssid}")
-            info.set("wifiConnected", True)
-            info.set("wifiSSID", ssid)
-            info.set("wifiIP", ip)
-            time.sleep(info.get('d.connDelay'))
+            print(f"Attempted to connect to SSID '{ssid}' with password '{passw}'")
+            info.set("wifi.connected", True)
+            info.set("wifi.ssid", ssid)
+            info.set("wifi.ip", ip)
+            time.sleep(info.get('d.wifiConnDelay'))
             return self._json(payload={"status": 'connected', "ssid": ssid, 'ip': ip})
         elif p == "/api/v1/reboot":
             print("Requested to reboot!")
+        else:
+            return self._json(404, {"ok": False, "error": "unknown route"})
+    
+    def do_DELETE(self):
+        p = urlparse(self.path).path
+        # print(f"Made POST request: {p}")        # todo: debug
+        length = int(self.headers.get("Content-Length", 0))
+        body = self.rfile.read(length)
+
+        time.sleep(info.get('d.responseDelay'))
+        
+        if p == "/api/v1/gif":
+            data = json.loads(body)
+            print(data)
+            name = data['name']
+            print(f"Requested to delete GIF with name '{name}'")
+            return self._json(payload={"status": 'success', "message": 'file removed', 'file': name})
         else:
             return self._json(404, {"ok": False, "error": "unknown route"})
 
@@ -116,8 +136,8 @@ def run_cli(httpd: HTTPServer):
                 return
             elif cmd == 'set':
                 noun = line[1]
-                if noun == 'ip':
-                    info.set('ip', line[2])
+                # todo: convert to appropriate type (int, float, str, etc)
+                info.set(noun, line[2])
             elif cmd == 'help':
                 print("...coming soon!")
             else:
@@ -134,7 +154,29 @@ if __name__ == "__main__":
     # a global variables class that is grabbed by Handler and set by the CLI
     info = InfoClass()
 
-    info.set('d.connDelay', 1)
+    info.set('d.wifiConnDelay', 1)          # to simulate the wifi connection delay
+    info.set('d.responseDelay', 0)        # to simulate a slower network response
+    # info.set('d.responseDelay', 0.1)        # to simulate a slower network response
+    info.set('d.getActionDelay', 0.5)       # to simulate the esp8266 doing stuff on a task/action
+
+    info.set('wifi.ip', '1.2.3.4')
+    info.set('wifi.connected', True)
+    info.set('wifi.ssid', 'TestSSID')
+    info.set('wifi.networks', [
+                {'ssid': 'ABC', 'rssi': 0, 'enc': 7}, 
+                {'ssid': 'Hi There!', 'rssi': -50, 'enc': 5}
+            ]
+    )
+    info.set('gif.list', {
+        'usedBytes': 1500,
+        'totalBytes': 50000,
+        'freeBytes': 50000-1500,
+        'files': [
+            {'name': 'test.gif', 'size': 1000}, 
+            {'name': '[BIG SHOT].gif', 'size': 500}
+        ],
+        }
+    )
 
     t = threading.Thread(target=run_server, args=(httpd,), daemon=True)
     t.start()
