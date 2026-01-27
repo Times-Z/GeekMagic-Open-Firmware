@@ -65,7 +65,6 @@ auto ConfigManager::load() -> bool {
     String ssid = doc["wifi_ssid"] | "";
     String password = doc["wifi_password"] | "";
 
-    this->lcd_enable = doc["lcd_enable"] | lcd_enable;
     this->lcd_rotation = doc["lcd_rotation"] | lcd_rotation;
     this->lcd_spi_hz = doc["lcd_spi_hz"] | lcd_spi_hz;
 
@@ -104,13 +103,6 @@ auto ConfigManager::getSSID() const -> const char* { return ssid.c_str(); }
  * @return The password as a c style string
  */
 auto ConfigManager::getPassword() const -> const char* { return password.c_str(); }
-
-/**
- * @brief Returns the current status of the LCD enable flag
- *
- * @return true if the LCD is enabled false otherwise
- */
-auto ConfigManager::getLCDEnable() const -> bool { return lcd_enable; }
 
 /**
  * @brief Retrieves the LCD rotation setting

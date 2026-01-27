@@ -27,7 +27,6 @@
 #include <SPI.h>
 
 // LCD configuration defaults for hellocubic lite
-static constexpr bool LCD_ENABLE = true;
 static constexpr int16_t LCD_W = 240;
 static constexpr int16_t LCD_H = 240;
 static constexpr uint8_t LCD_ROTATION = 4;
@@ -59,14 +58,12 @@ class ConfigManager {
     bool migrateWiFiToSecureStorage(String ssid, String password);
 
    public:
-    bool getLCDEnableSafe() const { return lcd_enable; }
     uint8_t getLCDRotationSafe() const { return lcd_rotation; }
     uint32_t getLCDSpiHzSafe() const { return (lcd_spi_hz > 0) ? lcd_spi_hz : LCD_SPI_HZ; }
     std::string ssid;
     std::string password;
     std::string filename;
     SecureStorage secure;
-    bool lcd_enable = true;
     uint8_t lcd_rotation = 4;
     uint32_t lcd_spi_hz = 40000000;
 };
