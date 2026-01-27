@@ -36,8 +36,6 @@ static constexpr int THREE_LINES_SPACE = 60;
 class DisplayManager {
    public:
     static void begin();
-    static bool isReady();
-    static void ensureInit();
     static Arduino_GFX* getGfx();
     static void drawStartup(String currentIP);
     static void drawTextWrapped(int16_t xPos, int16_t yPos, const String& text, uint8_t textSize, uint16_t fgColor,

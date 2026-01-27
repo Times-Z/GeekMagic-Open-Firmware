@@ -85,13 +85,13 @@ void setup() {
     Serial.println("");
     Logger::info(("GeekMagic Open Firmware " + String(PROJECT_VER_STR)).c_str());
 
+    DisplayManager::begin();
+
     constexpr int TOTAL_STEPS = 6;
     int step = 0;
 
     if (!LittleFS.begin()) {
-        if (DisplayManager::isReady()) {
-            DisplayManager::drawLoadingBar((float)step / TOTAL_STEPS, LOADING_BAR_Y);
-        }
+        DisplayManager::drawLoadingBar((float)step / TOTAL_STEPS, LOADING_BAR_Y);
         Logger::error("Failed to mount LittleFS");
         return;
     }
@@ -111,28 +111,24 @@ void setup() {
     }
     step++;
 
-    DisplayManager::begin();
-    if (DisplayManager::isReady()) {
-        DisplayManager::drawTextWrapped(LOADING_BAR_TEXT_X, LOADING_BAR_TEXT_Y, "Starting...", 2, LCD_WHITE, LCD_BLACK,
-                                        true);
-        DisplayManager::drawLoadingBar((float)step / TOTAL_STEPS, LOADING_BAR_Y);
-    }
+    DisplayManager::drawTextWrapped(LOADING_BAR_TEXT_X, LOADING_BAR_TEXT_Y, "Starting...", 2, LCD_WHITE, LCD_BLACK,
+                                    true);
+    DisplayManager::drawLoadingBar((float)step / TOTAL_STEPS, LOADING_BAR_Y);
     step++;
 
     wifiManager = new WiFiManager(configManager.getSSID(), configManager.getPassword(), AP_SSID, AP_PASSWORD);
     wifiManager->begin();
-    if (DisplayManager::isReady()) {
-        DisplayManager::drawLoadingBar((float)step / TOTAL_STEPS, LOADING_BAR_Y);
-    }
+
+    DisplayManager::drawLoadingBar((float)step / TOTAL_STEPS, LOADING_BAR_Y);
+
     step++;
 
     webserver = new Webserver();
     webserver->begin();
     // capture initial free heap after core subsystems initialized
     initial_free_heap = ESP.getFreeHeap();  // NOLINT(readability-static-accessed-through-instance)
-    if (DisplayManager::isReady()) {
-        DisplayManager::drawLoadingBar((float)step / TOTAL_STEPS, LOADING_BAR_Y);
-    }
+
+    DisplayManager::drawLoadingBar((float)step / TOTAL_STEPS, LOADING_BAR_Y);
     step++;
 
     registerApiEndpoints(webserver);
@@ -151,13 +147,15 @@ void setup() {
     webserver->registerStaticDir("/web/css", "/css", "text/css");
     webserver->registerStaticDir("/web/js", "/js", "application/javascript");
 
-    if (DisplayManager::isReady()) {
-        DisplayManager::drawLoadingBar(1.0F, LOADING_BAR_Y);
-    }
+    DisplayManager::drawLoadingBar(1.0F, LOADING_BAR_Y);
 
     delay(LOADING_DELAY_MS);
 
     DisplayManager::drawStartup(wifiManager->getIP().toString());
+
+    // enable watchdog before going to loop()
+    // 2 seconds should be way more than the main loop needs to do stuff
+    ESP.wdtEnable(WDTO_2S);
 }
 
 void loop() {
@@ -183,4 +181,6 @@ void loop() {
         snprintf(msgBuf, sizeof(msgBuf), "Free heap: %s (initial: %s)", freeBuf, initBuf);
         Logger::info(msgBuf);
     }
+
+    ESP.wdtFeed();  // kick watchdog
 }

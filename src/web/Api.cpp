@@ -688,12 +688,10 @@ static void otaHandleStart(HTTPUpload& upload, int mode) {
     otaCancelRequested = false;
     otaTotal = static_cast<size_t>(upload.contentLength);
 
-    if (DisplayManager::isReady()) {
-        DisplayManager::clearScreen();
-        DisplayManager::drawTextWrapped(OTA_TEXT_X_OFFSET, OTA_TEXT_Y_OFFSET, "Uploading...", 2, LCD_WHITE, LCD_BLACK,
-                                        true);
-        DisplayManager::drawLoadingBar(0.0F, OTA_LOADING_Y_OFFSET);
-    }
+    DisplayManager::clearScreen();
+    DisplayManager::drawTextWrapped(OTA_TEXT_X_OFFSET, OTA_TEXT_Y_OFFSET, "Uploading...", 2, LCD_WHITE, LCD_BLACK,
+                                    true);
+    DisplayManager::drawLoadingBar(0.0F, OTA_LOADING_Y_OFFSET);
 
     int constexpr security_space = 0x1000;
     u_int constexpr bin_mask = 0xFFFFF000;
@@ -729,11 +727,9 @@ static void otaHandleWrite(HTTPUpload& upload) {
             otaInProgress = false;
             Logger::warn("OTA canceled by user", "API::OTA");
 
-            if (DisplayManager::isReady()) {
-                DisplayManager::drawTextWrapped(OTA_TEXT_X_OFFSET, OTA_TEXT_Y_OFFSET, "Canceled", 2, LCD_WHITE,
-                                                LCD_BLACK, true);
-                DisplayManager::drawLoadingBar(0.0F, OTA_LOADING_Y_OFFSET);
-            }
+            DisplayManager::drawTextWrapped(OTA_TEXT_X_OFFSET, OTA_TEXT_Y_OFFSET, "Canceled", 2, LCD_WHITE, LCD_BLACK,
+                                            true);
+            DisplayManager::drawLoadingBar(0.0F, OTA_LOADING_Y_OFFSET);
 
             return;
         }
@@ -746,14 +742,12 @@ static void otaHandleWrite(HTTPUpload& upload) {
 
         otaSize += upload.currentSize;
 
-        if (DisplayManager::isReady()) {
-            float progress = 0.0F;
-            if (otaTotal > 0) {
-                progress = static_cast<float>(otaSize) / static_cast<float>(otaTotal);
-            }
-
-            DisplayManager::drawLoadingBar(progress, OTA_LOADING_Y_OFFSET);
+        float progress = 0.0F;
+        if (otaTotal > 0) {
+            progress = static_cast<float>(otaSize) / static_cast<float>(otaTotal);
         }
+
+        DisplayManager::drawLoadingBar(progress, OTA_LOADING_Y_OFFSET);
     }
 }
 
@@ -776,11 +770,9 @@ static void otaHandleEnd(HTTPUpload& /*upload*/, int mode) {
             otaStatus = String("Update OK (") + String(otaSize) + " bytes)";
             Logger::info(otaStatus.c_str(), "API::OTA");
 
-            if (DisplayManager::isReady()) {
-                DisplayManager::drawLoadingBar(1.0F, OTA_LOADING_Y_OFFSET);
-                DisplayManager::drawTextWrapped(OTA_TEXT_X_OFFSET, OTA_TEXT_Y_OFFSET, "Success!", 2, LCD_WHITE,
-                                                LCD_BLACK, true);
-            }
+            DisplayManager::drawLoadingBar(1.0F, OTA_LOADING_Y_OFFSET);
+            DisplayManager::drawTextWrapped(OTA_TEXT_X_OFFSET, OTA_TEXT_Y_OFFSET, "Success!", 2, LCD_WHITE, LCD_BLACK,
+                                            true);
         } else {
             otaError = true;
             otaStatus = Update.getErrorString();
@@ -802,8 +794,6 @@ static void otaHandleAborted(HTTPUpload& /*upload*/) {
     otaInProgress = false;
     otaCancelRequested = false;
 
-    if (DisplayManager::isReady()) {
-        DisplayManager::drawTextWrapped(OTA_TEXT_X_OFFSET, OTA_TEXT_Y_OFFSET, "Aborted", 2, LCD_WHITE, LCD_BLACK, true);
-        DisplayManager::drawLoadingBar(0.0F, OTA_LOADING_Y_OFFSET);
-    }
+    DisplayManager::drawTextWrapped(OTA_TEXT_X_OFFSET, OTA_TEXT_Y_OFFSET, "Aborted", 2, LCD_WHITE, LCD_BLACK, true);
+    DisplayManager::drawLoadingBar(0.0F, OTA_LOADING_Y_OFFSET);
 }
