@@ -49,12 +49,8 @@ class ConfigManager {
     void setWiFi(const char* newSsid, const char* newPassword);
     const char* getSSID() const;
     const char* getPassword() const;
-    bool getLCDEnable() const;
     uint8_t getLCDRotation() const;
-    bool getLCDDcCmdHigh() const;
     uint32_t getLCDSpiHz() const;
-    int8_t getLCDBacklightGpio() const;
-    bool getLCDBacklightActiveLow() const;
     bool migrateWiFiToSecureStorage(String ssid, String password);
 
    public:
