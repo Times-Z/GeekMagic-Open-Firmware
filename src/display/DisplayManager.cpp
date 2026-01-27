@@ -36,7 +36,7 @@ static GeekMagicSPIBus g_lcdBus =
     GeekMagicSPIBus(LCD_DC_GPIO, LCD_CS_GPIO, LCD_CS_ACTIVE_HIGH, (int32_t)LCD_SPI_HZ, (int8_t)LCD_SPI_MODE);
 static Arduino_ST7789 g_lcd = Arduino_ST7789(&g_lcdBus, -1, 0, true, LCD_W, LCD_H);
 
-static constexpr uint32_t LCD_HARDWARE_RESET_DELAY_MS = 100;
+static constexpr uint32_t LCD_HARDWARE_RESET_DELAY_MS = 120;
 static constexpr uint32_t LCD_BEGIN_DELAY_MS = 10;
 static constexpr int16_t DISPLAY_PADDING = 10;
 static constexpr int16_t DISPLAY_INFO_Y = 100;
@@ -144,6 +144,7 @@ static constexpr uint8_t ST7789_SLEEP_DELAY_MS = 120;
 static constexpr uint8_t ST7789_SLEEP_OUT = 0x11;
 static constexpr uint8_t ST7789_PORCH = 0xB2;
 static constexpr uint8_t ST7789_PORCH_SETTINGS = 0x1F;
+static constexpr uint8_t ST7789_SW_RESET = 0x01;
 
 static constexpr uint8_t ST7789_TEARING_EFFECT = 0x35;
 static constexpr uint8_t ST7789_MEMORY_ACCESS_CONTROL = 0x36;
@@ -166,6 +167,7 @@ static constexpr uint8_t ST7789_GAMMA_CTRL = 0xE4;
 
 static constexpr uint8_t ST7789_INVERSION_ON = 0x21;
 static constexpr uint8_t ST7789_DISPLAY_ON = 0x29;
+static constexpr uint8_t ST7789_NORMAL_DISPLAY_MODE = 0x13;
 
 // Porch parameters used in sequence
 static constexpr uint8_t ST7789_PORCH_PARAM_HS = 0x1F;
@@ -214,14 +216,8 @@ auto DisplayManager::getGfx() -> Arduino_GFX* { return &g_lcd; }
  * @return void
  */
 static inline void lcdBacklightOn() {
-    int8_t gpio = configManager.getLCDBacklightGpioSafe();
-    if (gpio < 0) {
-        Logger::warn("No backlight GPIO defined", "DisplayManager");
-        return;
-    }
-
-    pinMode((uint8_t)gpio, OUTPUT);
-    digitalWrite((uint8_t)gpio, configManager.getLCDBacklightActiveLowSafe() ? LOW : HIGH);
+    pinMode((uint8_t)LCD_BACKLIGHT_GPIO, OUTPUT);
+    digitalWrite((uint8_t)LCD_BACKLIGHT_GPIO, LCD_BACKLIGHT_ACTIVE_LOW ? LOW : HIGH);
 }
 
 /**
@@ -268,7 +264,6 @@ static void lcdRunVendorInit() {
 
     ST7789_WriteCommand(ST7789_SLEEP_OUT);
     delay(ST7789_SLEEP_DELAY_MS);
-    yield();
 
     ST7789_WriteCommand(ST7789_PORCH);
     ST7789_WriteData(ST7789_PORCH_PARAM_HS);
@@ -276,101 +271,82 @@ static void lcdRunVendorInit() {
     ST7789_WriteData(ST7789_PORCH_PARAM_DUMMY);
     ST7789_WriteData(ST7789_PORCH_PARAM_HBP);
     ST7789_WriteData(ST7789_PORCH_PARAM_VBP);
-    yield();
 
     ST7789_WriteCommand(ST7789_TEARING_EFFECT);
     ST7789_WriteData(ST7789_TEARING_PARAM_OFF);
-    yield();
 
     ST7789_WriteCommand(ST7789_MEMORY_ACCESS_CONTROL);
     ST7789_WriteData(ST7789_MADCTL_PARAM_DEFAULT);
-    yield();
 
     ST7789_WriteCommand(ST7789_COLORMODE);
     ST7789_WriteData(ST7789_COLORMODE_RGB565);
-    yield();
 
     ST7789_WriteCommand(ST7789_POWER_B7);
     ST7789_WriteData(ST7789_B7_PARAM_DEFAULT);
-    yield();
 
     ST7789_WriteCommand(ST7789_POWER_BB);
     ST7789_WriteData(ST7789_BB_PARAM_VOLTAGE);
-    yield();
 
     ST7789_WriteCommand(ST7789_POWER_C0);
     ST7789_WriteData(ST7789_C0_PARAM_1);
-    yield();
 
     ST7789_WriteCommand(ST7789_POWER_C2);
     ST7789_WriteData(ST7789_C2_PARAM_1);
-    yield();
 
     ST7789_WriteCommand(ST7789_POWER_C3);
     ST7789_WriteData(ST7789_C3_PARAM_1);
-    yield();
 
     ST7789_WriteCommand(ST7789_POWER_C4);
     ST7789_WriteData(ST7789_C4_PARAM_1);
-    yield();
 
     ST7789_WriteCommand(ST7789_POWER_C6);
     ST7789_WriteData(ST7789_C6_PARAM_1);
-    yield();
 
     ST7789_WriteCommand(ST7789_POWER_D6);
     ST7789_WriteData(ST7789_D6_PARAM_1);
-    yield();
 
     ST7789_WriteCommand(ST7789_POWER_D0);
     ST7789_WriteData(ST7789_D0_PARAM_1);
     ST7789_WriteData(ST7789_D0_PARAM_2);
-    yield();
 
     ST7789_WriteCommand(ST7789_POWER_D6);
     ST7789_WriteData(ST7789_D6_PARAM_1);
-    yield();
 
     ST7789_WriteCommand(ST7789_GAMMA_POS);
     for (uint8_t v : ST7789_GAMMA_POS_DATA) {
         ST7789_WriteData(v);
     }
-    yield();
 
     ST7789_WriteCommand(ST7789_GAMMA_NEG);
     for (uint8_t v : ST7789_GAMMA_NEG_DATA) {
         ST7789_WriteData(v);
     }
-    yield();
 
     ST7789_WriteCommand(ST7789_GAMMA_CTRL);
     for (uint8_t v : ST7789_GAMMA_CTRL_DATA) {
         ST7789_WriteData(v);
     }
-    yield();
 
     ST7789_WriteCommand(ST7789_INVERSION_ON);
-    yield();
+
+    ST7789_WriteCommand(ST7789_NORMAL_DISPLAY_MODE);
+    delay(10);
 
     ST7789_WriteCommand(ST7789_DISPLAY_ON);
-    yield();
 
     ST7789_WriteCommand(ST7789_CASET);
     ST7789_WriteData(ST7789_ADDR_START_HIGH);
     ST7789_WriteData(ST7789_ADDR_START_LOW);
     ST7789_WriteData(ST7789_ADDR_END_HIGH);
     ST7789_WriteData(ST7789_ADDR_END_LOW);
-    yield();
 
     ST7789_WriteCommand(ST7789_RASET);
     ST7789_WriteData(ST7789_ADDR_START_HIGH);
     ST7789_WriteData(ST7789_ADDR_START_LOW);
     ST7789_WriteData(ST7789_ADDR_END_HIGH);
     ST7789_WriteData(ST7789_ADDR_END_LOW);
-    yield();
 
     ST7789_WriteCommand(ST7789_RAMWR);
-    yield();
 
     g_lcdBus.endWrite();
 }
@@ -383,18 +359,12 @@ static void lcdRunVendorInit() {
  * @return void
  */
 static void lcdHardReset() {
-    int8_t rst_gpio = configManager.getLCDRstGpioSafe();
-    if (rst_gpio < 0) {
-        Logger::warn("No reset GPIO defined", "DisplayManager");
-        return;
-    }
-
-    pinMode((uint8_t)rst_gpio, OUTPUT);
-    digitalWrite((uint8_t)rst_gpio, HIGH);
+    pinMode((uint8_t)LCD_RST_GPIO, OUTPUT);
+    digitalWrite((uint8_t)LCD_RST_GPIO, HIGH);
     delay(LCD_HARDWARE_RESET_DELAY_MS);
-    digitalWrite((uint8_t)rst_gpio, LOW);
+    digitalWrite((uint8_t)LCD_RST_GPIO, LOW);
     delay(LCD_HARDWARE_RESET_DELAY_MS);
-    digitalWrite((uint8_t)rst_gpio, HIGH);
+    digitalWrite((uint8_t)LCD_RST_GPIO, HIGH);
     delay(LCD_HARDWARE_RESET_DELAY_MS);
 }
 
@@ -407,29 +377,30 @@ static void lcdEnsureInit() {
     Logger::info("Initialization started", "DisplayManager");
 
     lcdBacklightOn();
-    lcdHardReset();
 
     SPI.begin();
 
     uint32_t spi_hz = configManager.getLCDSpiHzSafe();
-    uint8_t spi_mode = configManager.getLCDSpiModeSafe();
     uint8_t rotation = configManager.getLCDRotationSafe();
 
     /*
     todo: for some reason just calling g_lcdBus.begin, hardReset, and vendorInit doesn't init the display, but
         given all g_lcd.begin() does is initialize the bus and sends some data (which is discarded with the hard reset)
         this is the all more confusing
+
+    todo2: so with RST and D/C this still needs both g_lcd.begin() and the custom init. But the g_lcd.begin() overrides
+    the SPI mode to mode 2, while we internally use mode 0. Strange stuff, one of the two functions is probably sending
+    bogus data
     */
 
-    g_lcdBus.begin((int32_t)spi_hz, (int8_t)spi_mode);
-
+    lcdHardReset();
     g_lcd.begin();
     delay(LCD_BEGIN_DELAY_MS);
 
-    lcdHardReset();
-    g_lcdBus.begin((int32_t)spi_hz, (int8_t)spi_mode);
-
+    g_lcdBus.begin((int32_t)spi_hz, (int8_t)SPI_MODE0);
+    // lcdHardReset();          // no longer needed after RST/DC pin swap
     lcdRunVendorInit();
+    delay(LCD_BEGIN_DELAY_MS);
 
     g_lcd.setRotation(rotation);
 
@@ -661,7 +632,7 @@ void DisplayManager::drawTextWrapped(int16_t xPos, int16_t yPos, const String& t
  */
 void DisplayManager::drawLoadingBar(float progress, int yPos, int barWidth, int barHeight, uint16_t fgColor,
                                     uint16_t bgColor) {
-    auto barXPos = (static_cast<int32_t>(configManager.getLCDWidthSafe()) - static_cast<int32_t>(barWidth)) / 2;
+    auto barXPos = (static_cast<int32_t>(LCD_W) - static_cast<int32_t>(barWidth)) / 2;
     auto barXPos16 = static_cast<int16_t>(barXPos);
     auto yPos16 = static_cast<int16_t>(yPos);
     auto barWidth16 = static_cast<int16_t>(barWidth);
