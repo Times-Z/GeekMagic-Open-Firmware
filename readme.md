@@ -70,7 +70,7 @@
 - **Resolution**: 240x240 pixels
 - **Color Format**: RGB565 (16-bit color)
 - **Interface**: SPI (Serial Peripheral Interface)
-- **SPI Speed**: up to 40 MHz (80 MHz is possible, but unstable and outside datasheet spec)
+- **SPI Speed**: 40 MHz (80 MHz is possible, but unstable and outside datasheet spec)
 - **Rotation**: Upside-down for cube display, normal for the small tv
 
 ### Pin wiring
