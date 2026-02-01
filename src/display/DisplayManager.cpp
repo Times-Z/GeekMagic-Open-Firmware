@@ -328,9 +328,6 @@ static void lcdRunVendorInit() {
 
     ST7789_WriteCommand(ST7789_INVERSION_ON);
 
-    ST7789_WriteCommand(ST7789_NORMAL_DISPLAY_MODE);
-    delay(10);
-
     ST7789_WriteCommand(ST7789_DISPLAY_ON);
 
     ST7789_WriteCommand(ST7789_CASET);
