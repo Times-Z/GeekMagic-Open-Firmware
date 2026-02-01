@@ -70,7 +70,7 @@
 - **Resolution**: 240x240 pixels
 - **Color Format**: RGB565 (16-bit color)
 - **Interface**: SPI (Serial Peripheral Interface)
-- **SPI Speed**: up to 80 MHz (40 MHz is more stable)
+- **SPI Speed**: up to 40 MHz (80 MHz is possible, but unstable and outside datasheet spec)
 - **Rotation**: Upside-down for cube display, normal for the small tv
 
 ### Pin wiring
@@ -83,9 +83,9 @@ The display is connected to the ESP8266 using the following GPIO pins:
 | ------------- | -------- | ----------------------------------------------------- |
 | **MOSI**      | GPIO 13  | SPI Master Out Slave In (data from ESP8266 to screen) |
 | **SCK**       | GPIO 14  | SPI Clock                                             |
-| **CS**        | GPIO 2   | Chip Select (Active HIGH)                             |
+| **CS**        | GND      | Chip Select, tied permanently to GND                  |
 | **DC**        | GPIO 0   | Data/Command select (LOW=command, HIGH=data)          |
-| **RST**       | GPIO 15  | Reset pin                                             |
+| **RST**       | GPIO 2   | Reset pin                                             |
 | **Backlight** | GPIO 5   | Backlight control (Active LOW)                        |
 
 <div align="center">
@@ -96,9 +96,9 @@ The display is connected to the ESP8266 using the following GPIO pins:
 
 ### Important configuration details
 
-**Chip select (CS) polarity**: This board uses **active-high** CS, which is non-standard. Most SPI displays use active-low CS. The CS pin must be driven HIGH to select the display
+**Chip select (CS) polarity**: This board ties CS of the display permanently to GND.
 
-**SPI mode**: SPI Mode 0 (CPOL=0, CPHA=0)
+**SPI mode**: SPI Mode 3 (CPOL=1, CPHA=1)
 
 **Data/command pin**: LOW for commands, HIGH for data
 
@@ -109,8 +109,8 @@ The display is connected to the ESP8266 using the following GPIO pins:
 ### Initialization sequence
 
 1. **Backlight control**: GPIO 5 is set as output and driven LOW to turn on the backlight
-2. **Hardware reset**: The RST pin (GPIO 15) is toggled to reset the ST7789 controller
-3. **SPI bus setup**: Hardware SPI is initialized with 80 MHz clock speed and Mode 0
+2. **Hardware reset**: The RST pin (GPIO 2) is toggled to reset the ST7789 controller
+3. **SPI bus setup**: Hardware SPI is initialized with 40 MHz clock speed and Mode 3
 4. **Display controller init**: The ST7789 is configured using a vendor-specific initialization sequence that includes:
     - Sleep out (0x11)
     - Porch settings (0xB2)
@@ -128,19 +128,15 @@ The display is connected to the ESP8266 using the following GPIO pins:
 
 The display uses **SPI** protocol for communication:
 
-1. **Chip select**: CS is driven HIGH to select the display
-2. **Command/data mode**: The DC pin indicates whether the data on MOSI is a command (DC=LOW) or pixel data (DC=HIGH)
-3. **Data transfer**: Data is shifted out on the MOSI pin, synchronized with the SCK clock signal
-4. **Chip deselect**: CS can be kept HIGH during continuous operations for better performance, or dropped LOW between operations
+1. **Command/data mode**: The DC pin indicates whether the data on MOSI is a command (DC=LOW) or pixel data (DC=HIGH)
+2. **Data transfer**: Data is shifted out on the MOSI pin, synchronized with the SCK clock signal
 
 ### Drawing to the screen
 
 The firmware uses the Arduino_GFX library with a custom ESP8266SPIWithCustomCS bus driver that handles the active-high CS polarity. Graphics operations:
 
-1. **Begin write**: Assert CS (set HIGH)
-2. **Write commands**: Set DC LOW, send command bytes via SPI
-3. **Write data**: Set DC HIGH, send pixel data via SPI
-4. **End write**: Optionally deassert CS (set LOW) - can be kept asserted for continuous operations
+1. **Write commands**: Set DC LOW, send command bytes via SPI
+2. **Write data**: Set DC HIGH, send pixel data via SPI
 
 ### Color format
 
@@ -160,8 +156,7 @@ Example colors:
 
 ### Performance optimizations
 
-- **High SPI speed**: 80 MHz clock for fast data transfer
-- **CS kept asserted**: During continuous operations, CS stays HIGH to reduce overhead
+- **High SPI speed**: 40 MHz clock for fast data transfer
 - **Hardware SPI**: Uses ESP8266's hardware SPI peripheral for efficient transfers
 - **Batch writes**: Multiple operations are batched between beginWrite/endWrite calls
 - **Direct frame buffer writes**: GIF frames are streamed directly to avoid intermediate buffering

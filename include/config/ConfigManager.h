@@ -32,11 +32,9 @@ static constexpr int16_t LCD_H = 240;
 static constexpr uint8_t LCD_ROTATION = 4;
 static constexpr int8_t LCD_MOSI_GPIO = 13;
 static constexpr int8_t LCD_SCK_GPIO = 14;
-static constexpr int8_t LCD_CS_GPIO = 15;
 static constexpr int8_t LCD_DC_GPIO = 0;
 static constexpr int8_t LCD_RST_GPIO = 2;
-static constexpr bool LCD_CS_ACTIVE_HIGH = true;
-static constexpr uint8_t LCD_SPI_MODE = SPI_MODE0;
+static constexpr uint8_t LCD_SPI_MODE = SPI_MODE3;
 static constexpr uint32_t LCD_SPI_HZ = 40000000;
 static constexpr int8_t LCD_BACKLIGHT_GPIO = 5;
 static constexpr bool LCD_BACKLIGHT_ACTIVE_LOW = true;
@@ -55,13 +53,11 @@ class ConfigManager {
 
    public:
     uint8_t getLCDRotationSafe() const { return lcd_rotation; }
-    uint32_t getLCDSpiHzSafe() const { return (lcd_spi_hz > 0) ? lcd_spi_hz : LCD_SPI_HZ; }
     std::string ssid;
     std::string password;
     std::string filename;
     SecureStorage secure;
     uint8_t lcd_rotation = 4;
-    uint32_t lcd_spi_hz = 40000000;
 };
 
 #endif  // CONFIG_MANAGER_H

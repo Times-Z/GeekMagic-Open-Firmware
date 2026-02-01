@@ -66,7 +66,6 @@ auto ConfigManager::load() -> bool {
     String password = doc["wifi_password"] | "";
 
     this->lcd_rotation = doc["lcd_rotation"] | lcd_rotation;
-    this->lcd_spi_hz = doc["lcd_spi_hz"] | lcd_spi_hz;
 
     String nvs_ssid = secure.get("wifi_ssid", "");
     String nvs_password = secure.get("wifi_password", "");
@@ -110,13 +109,6 @@ auto ConfigManager::getPassword() const -> const char* { return password.c_str()
  * @return The rotation of the LCD
  */
 auto ConfigManager::getLCDRotation() const -> uint8_t { return lcd_rotation; }
-
-/**
- * @brief Retrieves the SPI clock frequency for the LCD
- *
- * @return The SPI clock frequency in Hz
- */
-auto ConfigManager::getLCDSpiHz() const -> uint32_t { return lcd_spi_hz; }
 
 /**
  * @brief Set WiFi credentials in memory

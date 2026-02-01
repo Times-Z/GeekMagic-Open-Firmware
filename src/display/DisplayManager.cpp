@@ -21,10 +21,10 @@
 #include <Logger.h>
 #include <array>
 #include <algorithm>
+#include <Arduino.h>
 
 #include "project_version.h"
 #include "display/DisplayManager.h"
-#include "display/GeekMagicSPIBus.h"
 #include "config/ConfigManager.h"
 #include "display/Gif.h"
 
@@ -32,8 +32,7 @@ static Gif s_gif;
 
 extern ConfigManager configManager;
 
-static GeekMagicSPIBus g_lcdBus =
-    GeekMagicSPIBus(LCD_DC_GPIO, LCD_CS_GPIO, LCD_CS_ACTIVE_HIGH, (int32_t)LCD_SPI_HZ, (int8_t)LCD_SPI_MODE);
+static Arduino_HWSPI g_lcdBus = Arduino_HWSPI(LCD_DC_GPIO, -1, &SPI, true);
 static Arduino_ST7789 g_lcd = Arduino_ST7789(&g_lcdBus, -1, 0, true, LCD_W, LCD_H);
 
 static constexpr uint32_t LCD_HARDWARE_RESET_DELAY_MS = 120;
@@ -378,27 +377,13 @@ static void lcdEnsureInit() {
 
     lcdBacklightOn();
 
-    SPI.begin();
-
-    uint32_t spi_hz = configManager.getLCDSpiHzSafe();
     uint8_t rotation = configManager.getLCDRotationSafe();
 
-    /*
-    todo: for some reason just calling g_lcdBus.begin, hardReset, and vendorInit doesn't init the display, but
-        given all g_lcd.begin() does is initialize the bus and sends some data (which is discarded with the hard reset)
-        this is the all more confusing
-
-    todo2: so with RST and D/C this still needs both g_lcd.begin() and the custom init. But the g_lcd.begin() overrides
-    the SPI mode to mode 2, while we internally use mode 0. Strange stuff, one of the two functions is probably sending
-    bogus data
-    */
-
+    // SPI mode 3 is required. This toggles the pin from LOW to HIGH after reset, which my guess
+    // is after reset "initializes" the SPI interface of the display, as CS is tied to GND?
+    // ...strange that SPI_MODE0 will not work as the IC doesn't care about CLK's polarity
+    g_lcdBus.begin((int32_t)LCD_SPI_HZ, (int8_t)LCD_SPI_MODE);
     lcdHardReset();
-    g_lcd.begin();
-    delay(LCD_BEGIN_DELAY_MS);
-
-    g_lcdBus.begin((int32_t)spi_hz, (int8_t)SPI_MODE0);
-    // lcdHardReset();          // no longer needed after RST/DC pin swap
     lcdRunVendorInit();
     delay(LCD_BEGIN_DELAY_MS);
 
