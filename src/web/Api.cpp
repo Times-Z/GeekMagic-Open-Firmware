@@ -28,9 +28,11 @@
 
 #include "config/ConfigManager.h"
 #include "wireless/WiFiManager.h"
+#include "ntp/NTPClient.h"
 
 extern ConfigManager configManager;
 extern WiFiManager* wifiManager;
+extern NTPClient* ntpClient;
 
 static bool otaError = false;
 static size_t otaSize = 0;
@@ -50,6 +52,7 @@ static void otaHandleAborted(HTTPUpload& upload);
 void handleDeleteGif(Webserver* webserver);
 
 static constexpr int WIFI_CONNECT_TIMEOUT_MS = 15000;
+static constexpr size_t NTP_CONFIG_DOC_SIZE = 512;
 
 /**
  * @brief Register API endpoints for the webserver
@@ -63,6 +66,11 @@ void registerApiEndpoints(Webserver* webserver) {
     webserver->raw().on("/api/v1/wifi/scan", HTTP_GET, [webserver]() { handleWifiScan(webserver); });
     webserver->raw().on("/api/v1/wifi/connect", HTTP_POST, [webserver]() { handleWifiConnect(webserver); });
     webserver->raw().on("/api/v1/wifi/status", HTTP_GET, [webserver]() { handleWifiStatus(webserver); });
+
+    webserver->raw().on("/api/v1/ntp/sync", HTTP_POST, [webserver]() { handleNtpSync(webserver); });
+    webserver->raw().on("/api/v1/ntp/status", HTTP_GET, [webserver]() { handleNtpStatus(webserver); });
+    webserver->raw().on("/api/v1/ntp/config", HTTP_GET, [webserver]() { handleNtpConfigGet(webserver); });
+    webserver->raw().on("/api/v1/ntp/config", HTTP_POST, [webserver]() { handleNtpConfigSet(webserver); });
 
     webserver->raw().on("/api/v1/reboot", HTTP_POST, [webserver]() { handleReboot(webserver); });
 
@@ -339,6 +347,146 @@ void handleReboot(Webserver* webserver) {
 
     delay(rebootDelayMs);
     ESP.restart();  // NOLINT(readability-static-accessed-through-instance)
+}
+
+/**
+ * @brief Manual NTP sync trigger endpoint
+ */
+void handleNtpSync(Webserver* webserver) {
+    JsonDocument doc;
+
+    if (ntpClient == nullptr) {
+        doc["status"] = "error";
+        doc["message"] = "NTP client not initialized";
+        String json;
+        serializeJson(doc, json);
+        webserver->raw().send(HTTP_CODE_INTERNAL_ERROR, "application/json", json);
+        return;
+    }
+
+    bool syncOk = ntpClient->syncNow();
+    doc["status"] = syncOk ? "ok" : "error";
+    doc["lastStatus"] = ntpClient->lastStatus();
+    doc["lastSyncTime"] = ntpClient->lastSyncTime();
+
+    String json;
+    serializeJson(doc, json);
+    webserver->raw().send(HTTP_CODE_OK, "application/json", json);
+}
+
+/**
+ * @brief Return NTP status
+ */
+void handleNtpStatus(Webserver* webserver) {
+    JsonDocument doc;
+
+    if (ntpClient == nullptr) {
+        doc["status"] = "error";
+        doc["message"] = "NTP client not initialized";
+        String json;
+        serializeJson(doc, json);
+        webserver->raw().send(HTTP_CODE_INTERNAL_ERROR, "application/json", json);
+        return;
+    }
+
+    doc["lastOk"] = ntpClient->lastSyncOk();
+    doc["lastStatus"] = ntpClient->lastStatus();
+    doc["lastSyncTime"] = ntpClient->lastSyncTime();
+
+    String json;
+    serializeJson(doc, json);
+    webserver->raw().send(HTTP_CODE_OK, "application/json", json);
+}
+
+/**
+ * @brief Get NTP configuration
+ */
+void handleNtpConfigGet(Webserver* webserver) {
+    JsonDocument doc;
+    doc["ntp_server"] = configManager.getNtpServer();
+
+    String json;
+    serializeJson(doc, json);
+    webserver->raw().send(HTTP_CODE_OK, "application/json", json);
+}
+
+/**
+ * @brief Set NTP configuration
+ */
+void handleNtpConfigSet(Webserver* webserver) {
+    if (!webserver->raw().hasArg("plain") || webserver->raw().arg("plain").length() == 0) {
+        JsonDocument doc;
+        doc["status"] = "error";
+        doc["message"] = "Missing JSON body";
+
+        String json;
+
+        serializeJson(doc, json);
+        webserver->raw().send(HTTP_CODE_BAD_REQUEST, "application/json", json);
+
+        return;
+    }
+
+    String body = webserver->raw().arg("plain");
+    DynamicJsonDocument ddoc(NTP_CONFIG_DOC_SIZE);
+    DeserializationError err = deserializeJson(ddoc, body);
+
+    if (err) {
+        JsonDocument doc;
+        doc["status"] = "error";
+        doc["message"] = "Invalid JSON";
+
+        String json;
+        serializeJson(doc, json);
+
+        webserver->raw().send(HTTP_CODE_BAD_REQUEST, "application/json", json);
+
+        return;
+    }
+
+    const char* server = ddoc["ntp_server"] | "";
+
+    if (strlen(server) == 0) {
+        JsonDocument doc;
+        doc["status"] = "error";
+        doc["message"] = "ntp_server missing";
+
+        String json;
+        serializeJson(doc, json);
+
+        webserver->raw().send(HTTP_CODE_BAD_REQUEST, "application/json", json);
+
+        return;
+    }
+
+    configManager.setNtpServer(server);
+
+    if (!configManager.save()) {
+        JsonDocument doc;
+        doc["status"] = "error";
+        doc["message"] = "Failed to save config";
+
+        String json;
+
+        serializeJson(doc, json);
+
+        webserver->raw().send(HTTP_CODE_INTERNAL_ERROR, "application/json", json);
+
+        return;
+    }
+
+    // optionally trigger a sync
+    if (ntpClient != nullptr) {
+        ntpClient->syncNow();
+    }
+
+    JsonDocument doc;
+    doc["status"] = "ok";
+    doc["ntp_server"] = server;
+    String json;
+    serializeJson(doc, json);
+
+    webserver->raw().send(HTTP_CODE_OK, "application/json", json);
 }
 
 /**

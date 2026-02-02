@@ -58,6 +58,12 @@ class ConfigManager {
     std::string filename;
     SecureStorage secure;
     uint8_t lcd_rotation = 4;
+    std::string ntp_server;
+
+    const char* getNtpServer() const { return ntp_server.c_str(); }
+    void setNtpServer(const char* s) {
+        if (s) ntp_server = s;
+    }
 };
 
 #endif  // CONFIG_MANAGER_H

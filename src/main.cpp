@@ -30,6 +30,7 @@
 #include "display/DisplayManager.h"
 #include "web/Webserver.h"
 #include "web/Api.h"
+#include "ntp/NTPClient.h"
 #include <array>
 
 ConfigManager configManager;
@@ -50,6 +51,7 @@ static constexpr int LOADING_BAR_Y = 110;
 static constexpr int LOADING_DELAY_MS = 1000;
 
 Webserver* webserver = nullptr;
+NTPClient* ntpClient = nullptr;
 
 /**
  * @brief Formats bytes into a human-readable string
@@ -119,13 +121,16 @@ void setup() {
     wifiManager = new WiFiManager(configManager.getSSID(), configManager.getPassword(), AP_SSID, AP_PASSWORD);
     wifiManager->begin();
 
+    ntpClient = new NTPClient();
+    ntpClient->begin();
+
     DisplayManager::drawLoadingBar((float)step / TOTAL_STEPS, LOADING_BAR_Y);
 
     step++;
 
     webserver = new Webserver();
     webserver->begin();
-    // capture initial free heap after core subsystems initialized
+
     initial_free_heap = ESP.getFreeHeap();  // NOLINT(readability-static-accessed-through-instance)
 
     DisplayManager::drawLoadingBar((float)step / TOTAL_STEPS, LOADING_BAR_Y);
@@ -142,6 +147,7 @@ void setup() {
     webserver->serveStaticC("/update.html", "/web/update.html", "text/html");
     webserver->serveStaticC("/gif_upload.html", "/web/gif_upload.html", "text/html");
     webserver->serveStaticC("/wifi.html", "/web/wifi.html", "text/html");
+    webserver->serveStaticC("/ntp.html", "/web/ntp.html", "text/html");
     webserver->serveStaticC("/config.json", "/config.json", "application/json");
 
     webserver->registerStaticDir("/web/css", "/css", "text/css");
@@ -162,6 +168,11 @@ void loop() {
     if (webserver != nullptr) {
         webserver->handleClient();
     }
+
+    if (ntpClient != nullptr) {
+        ntpClient->loop();
+    }
+
     DisplayManager::update();
 
     static unsigned long last_free_heap_log = 0;

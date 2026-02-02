@@ -1,0 +1,76 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>NTP Sync</title>
+    <link rel="stylesheet" href="./css/pico.min.css" />
+    <link rel="stylesheet" href="./css/style.css" />
+    <script src="./js/alpinejs.min.js" defer></script>
+    <script src="./js/utils.js"></script>
+    <script src="./js/themeSwitcher.js"></script>
+    <script src="./js/ntpHandler.js"></script>
+    <script src="./js/main.js"></script>
+  </head>
+  <body>
+    <main class="container">
+      <header id="header-placeholder"></header>
+
+      <a href="./index.html" class="wifi-back-link">← Back to Home</a>
+
+      <section x-data="ntpHandler()" x-init="init()">
+        <h2>NTP Time</h2>
+
+        <p>
+          <strong>Status:</strong>
+          <span x-text="lastStatus"></span>
+        </p>
+
+        <p>
+          <strong>Last sync:</strong>
+          <span x-text="humanTime(lastSyncTime)"></span>
+        </p>
+
+        <div>
+          <button
+            type="button"
+            class="primary"
+            @click="syncNow()"
+            x-bind:disabled="loading"
+          >
+            Sync Now
+          </button>
+          <button type="button" class="primary" @click="fetchStatus()">
+            Refresh Status
+          </button>
+        </div>
+
+        <hr />
+
+        <div class="ntp-config">
+          <h3>NTP Configuration</h3>
+          <label for="ntp-server">NTP Server</label>
+          <input
+            id="ntp-server"
+            type="text"
+            x-model="ntpServer"
+            placeholder="pool.ntp.org"
+          />
+          <div style="margin-top: 0.5em">
+            <button type="button" class="primary" @click="saveConfig()">
+              Save
+            </button>
+          </div>
+        </div>
+
+        <p>
+          <small
+            x-text="lastOk ? 'Last sync succeeded' : 'Last sync failed or not performed'"
+          ></small>
+        </p>
+      </section>
+
+      <footer id="footer-placeholder"></footer>
+    </main>
+  </body>
+</html>

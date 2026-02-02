@@ -32,6 +32,11 @@
 static int constexpr HTTP_CODE_OK = 200;
 
 /**
+ * @brief HTTP status code 400
+ */
+static int constexpr HTTP_CODE_BAD_REQUEST = 400;
+
+/**
  * @brief HTTP status code 404
  */
 static int constexpr HTTP_CODE_NOT_FOUND = 404;

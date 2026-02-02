@@ -64,6 +64,7 @@ auto ConfigManager::load() -> bool {
 
     String ssid = doc["wifi_ssid"] | "";
     String password = doc["wifi_password"] | "";
+    String ntp_server_cfg = doc["ntp_server"] | "";
 
     this->lcd_rotation = doc["lcd_rotation"] | lcd_rotation;
 
@@ -76,6 +77,10 @@ auto ConfigManager::load() -> bool {
 
         this->ssid = secure.get("wifi_ssid").c_str();
         this->password = secure.get("wifi_password").c_str();
+
+        if (ntp_server_cfg.length() != 0) {
+            this->ntp_server = ntp_server_cfg.c_str();
+        }
 
         // Ensure we delete the wifi credentials from the json config after migrating
         ConfigManager::save();
@@ -154,6 +159,9 @@ auto ConfigManager::save() -> bool {
     secure.put("wifi_password", this->getPassword());
 
     doc["lcd_rotation"] = lcd_rotation;
+    if (!this->ntp_server.empty()) {
+        doc["ntp_server"] = this->ntp_server.c_str();
+    }
 
     if (serializeJson(doc, file) == 0) {
         Logger::error("Failed to write config file", "ConfigManager");

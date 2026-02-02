@@ -38,4 +38,9 @@ void handleWifiScan(Webserver* webserver);
 void handleWifiConnect(Webserver* webserver);
 void handleWifiStatus(Webserver* webserver);
 
+void handleNtpSync(Webserver* webserver);
+void handleNtpStatus(Webserver* webserver);
+void handleNtpConfigGet(Webserver* webserver);
+void handleNtpConfigSet(Webserver* webserver);
+
 #endif  // API_H
