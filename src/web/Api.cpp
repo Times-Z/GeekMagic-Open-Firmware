@@ -63,35 +63,67 @@ static constexpr size_t NTP_CONFIG_DOC_SIZE = 512;
 void registerApiEndpoints(Webserver* webserver) {
     Logger::info("Registering API endpoints", "API");
 
+    // @openapi {get} /api/v1/wifi/scan summary="Scan available WiFi networks" responses=200:application/json
     webserver->raw().on("/api/v1/wifi/scan", HTTP_GET, [webserver]() { handleWifiScan(webserver); });
+
+    // @openapi {post} /api/v1/wifi/connect summary="Connect to a WiFi network" requestBody=application/json
+    // responses=200:application/json
     webserver->raw().on("/api/v1/wifi/connect", HTTP_POST, [webserver]() { handleWifiConnect(webserver); });
+
+    // @openapi {get} /api/v1/wifi/status summary="Get WiFi connection status" responses=200:application/json
     webserver->raw().on("/api/v1/wifi/status", HTTP_GET, [webserver]() { handleWifiStatus(webserver); });
 
+    // @openapi {post} /api/v1/ntp/sync summary="Trigger NTP sync" responses=200:application/json
     webserver->raw().on("/api/v1/ntp/sync", HTTP_POST, [webserver]() { handleNtpSync(webserver); });
+
+    // @openapi {get} /api/v1/ntp/status summary="Get NTP status" responses=200:application/json
     webserver->raw().on("/api/v1/ntp/status", HTTP_GET, [webserver]() { handleNtpStatus(webserver); });
+
+    // @openapi {get} /api/v1/ntp/config summary="Get NTP configuration" responses=200:application/json
     webserver->raw().on("/api/v1/ntp/config", HTTP_GET, [webserver]() { handleNtpConfigGet(webserver); });
+
+    // @openapi {post} /api/v1/ntp/config summary="Set NTP configuration" requestBody=application/json
+    // responses=200:application/json
     webserver->raw().on("/api/v1/ntp/config", HTTP_POST, [webserver]() { handleNtpConfigSet(webserver); });
 
+    // @openapi {post} /api/v1/reboot summary="Reboot the device" responses=200:application/json
     webserver->raw().on("/api/v1/reboot", HTTP_POST, [webserver]() { handleReboot(webserver); });
 
+    // @openapi {post} /api/v1/ota/fw summary="Upload firmware (OTA)" requestBody=multipart/form-data
+    // responses=200:application/json
     webserver->raw().on(
         "/api/v1/ota/fw", HTTP_POST, [webserver]() { handleOtaFinished(webserver); },
         [webserver]() { handleOtaUpload(webserver, U_FLASH); });
+
+    // @openapi {post} /api/v1/ota/fs summary="Upload filesystem (OTA)" requestBody=multipart/form-data
+    // responses=200:application/json
     webserver->raw().on(
         "/api/v1/ota/fs", HTTP_POST, [webserver]() { handleOtaFinished(webserver); },
         [webserver]() { handleOtaUpload(webserver, U_FS); });
 
+    // @openapi {get} /api/v1/ota/status summary="Get OTA status" responses=200:application/json
     webserver->raw().on("/api/v1/ota/status", HTTP_GET, [webserver]() { handleOtaStatus(webserver); });
+
+    // @openapi {post} /api/v1/ota/cancel summary="Cancel OTA" responses=200:application/json
     webserver->raw().on("/api/v1/ota/cancel", HTTP_POST, [webserver]() { handleOtaCancel(webserver); });
 
+    // @openapi {post} /api/v1/gif summary="Upload a GIF" requestBody=multipart/form-data responses=200:application/json
     webserver->raw().on(
         "/api/v1/gif", HTTP_POST, [webserver]() { handleGifUpload(webserver); },
         [webserver]() { handleGifUpload(webserver); });
 
+    // @openapi {post} /api/v1/gif/play summary="Play a GIF by name" requestBody=application/json
+    // responses=200:application/json
     webserver->raw().on("/api/v1/gif/play", HTTP_POST, [webserver]() { handlePlayGif(webserver); });
+
+    // @openapi {post} /api/v1/gif/stop summary="Stop GIF playback" responses=200:application/json
     webserver->raw().on("/api/v1/gif/stop", HTTP_POST, [webserver]() { handleStopGif(webserver); });
+
+    // @openapi {delete} /api/v1/gif summary="Delete a GIF by name" requestBody=application/json
+    // responses=200:application/json
     webserver->raw().on("/api/v1/gif", HTTP_DELETE, [webserver]() { handleDeleteGif(webserver); });
 
+    // @openapi {get} /api/v1/gif summary="List GIFs" responses=200:application/json
     webserver->raw().on("/api/v1/gif", HTTP_GET, [webserver]() { handleListGifs(webserver); });
 }
 
