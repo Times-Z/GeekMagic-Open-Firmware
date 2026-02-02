@@ -460,7 +460,7 @@ void handleNtpConfigSet(Webserver* webserver) {
     }
 
     String body = webserver->raw().arg("plain");
-    DynamicJsonDocument ddoc(NTP_CONFIG_DOC_SIZE);
+    JsonDocument ddoc;
     DeserializationError err = deserializeJson(ddoc, body);
 
     if (err) {
