@@ -188,10 +188,6 @@ auto Gif::gifSeekFile(GIFFILE* pFile, int32_t iPosition) -> int32_t {
  */
 auto Gif::gifDraw(GIFDRAW* pDraw) -> void  // NOLINT(readability-function-cognitive-complexity)
 {
-    if (!DisplayManager::isReady()) {
-        return;
-    }
-
     auto* gfx = DisplayManager::getGfx();
     if (gfx == nullptr) {
         return;
@@ -447,10 +443,6 @@ auto Gif::gifDraw(GIFDRAW* pDraw) -> void  // NOLINT(readability-function-cognit
  * @return true if playback started successfully false otherwise
  */
 auto Gif::playOne(const String& path) -> bool {
-    if (!DisplayManager::isReady()) {
-        return false;
-    }
-
     if (m_gif == nullptr) {
         if (!begin()) {
             return false;
@@ -576,10 +568,6 @@ auto Gif::playAllFromLittleFS() -> bool {
 
     if (m_gif == nullptr) {
         begin();
-    }
-
-    if (!DisplayManager::isReady()) {
-        return false;
     }
 
     if (!LittleFS.begin()) {

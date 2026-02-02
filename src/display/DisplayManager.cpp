@@ -21,10 +21,10 @@
 #include <Logger.h>
 #include <array>
 #include <algorithm>
+#include <Arduino.h>
 
 #include "project_version.h"
 #include "display/DisplayManager.h"
-#include "display/GeekMagicSPIBus.h"
 #include "config/ConfigManager.h"
 #include "display/Gif.h"
 
@@ -32,14 +32,10 @@ static Gif s_gif;
 
 extern ConfigManager configManager;
 
-static Arduino_DataBus* g_lcdBus = nullptr;
-static Arduino_GFX* g_lcd = nullptr;
-static bool g_lcdReady = false;
-static bool g_lcdInitializing = false;
-static uint32_t g_lcdInitAttempts = 0;
-static uint32_t g_lcdInitLastMs = 0;
-static bool g_lcdInitOk = false;
-static constexpr uint32_t LCD_HARDWARE_RESET_DELAY_MS = 100;
+static Arduino_HWSPI g_lcdBus = Arduino_HWSPI(LCD_DC_GPIO, -1, &SPI, true);
+static Arduino_ST7789 g_lcd = Arduino_ST7789(&g_lcdBus, -1, 0, true, LCD_W, LCD_H);
+
+static constexpr uint32_t LCD_HARDWARE_RESET_DELAY_MS = 120;
 static constexpr uint32_t LCD_BEGIN_DELAY_MS = 10;
 static constexpr int16_t DISPLAY_PADDING = 10;
 static constexpr int16_t DISPLAY_INFO_Y = 100;
@@ -147,6 +143,7 @@ static constexpr uint8_t ST7789_SLEEP_DELAY_MS = 120;
 static constexpr uint8_t ST7789_SLEEP_OUT = 0x11;
 static constexpr uint8_t ST7789_PORCH = 0xB2;
 static constexpr uint8_t ST7789_PORCH_SETTINGS = 0x1F;
+static constexpr uint8_t ST7789_SW_RESET = 0x01;
 
 static constexpr uint8_t ST7789_TEARING_EFFECT = 0x35;
 static constexpr uint8_t ST7789_MEMORY_ACCESS_CONTROL = 0x36;
@@ -169,6 +166,7 @@ static constexpr uint8_t ST7789_GAMMA_CTRL = 0xE4;
 
 static constexpr uint8_t ST7789_INVERSION_ON = 0x21;
 static constexpr uint8_t ST7789_DISPLAY_ON = 0x29;
+static constexpr uint8_t ST7789_NORMAL_DISPLAY_MODE = 0x13;
 
 // Porch parameters used in sequence
 static constexpr uint8_t ST7789_PORCH_PARAM_HS = 0x1F;
@@ -209,7 +207,7 @@ static constexpr uint8_t ST7789_ADDR_END_LOW = 0xEF;
  *
  * @return Pointer to the Arduino_GFX instance
  */
-auto DisplayManager::getGfx() -> Arduino_GFX* { return g_lcd; }
+auto DisplayManager::getGfx() -> Arduino_GFX* { return &g_lcd; }
 
 /**
  * @brief Turn the LCD backlight on
@@ -217,14 +215,8 @@ auto DisplayManager::getGfx() -> Arduino_GFX* { return g_lcd; }
  * @return void
  */
 static inline void lcdBacklightOn() {
-    int8_t gpio = configManager.getLCDBacklightGpioSafe();
-    if (gpio < 0) {
-        Logger::warn("No backlight GPIO defined", "DisplayManager");
-        return;
-    }
-
-    pinMode((uint8_t)gpio, OUTPUT);
-    digitalWrite((uint8_t)gpio, configManager.getLCDBacklightActiveLowSafe() ? LOW : HIGH);
+    pinMode((uint8_t)LCD_BACKLIGHT_GPIO, OUTPUT);
+    digitalWrite((uint8_t)LCD_BACKLIGHT_GPIO, LCD_BACKLIGHT_ACTIVE_LOW ? LOW : HIGH);
 }
 
 /**
@@ -232,30 +224,14 @@ static inline void lcdBacklightOn() {
  *
  * @return void
  */
-static inline void ST7789_WriteCommand(uint8_t cmd) {
-    if (g_lcdBus == nullptr) {
-        Logger::error("No data bus for LCD", "DisplayManager");
-
-        return;
-    }
-
-    g_lcdBus->writeCommand(cmd);
-}
+static inline void ST7789_WriteCommand(uint8_t cmd) { g_lcdBus.writeCommand(cmd); }
 
 /**
  * @brief Write a single data byte to the ST7789 via the data bus
  *
  * @return void
  */
-static inline void ST7789_WriteData(uint8_t data) {
-    if (g_lcdBus == nullptr) {
-        Logger::error("No data bus for LCD", "DisplayManager");
-
-        return;
-    };
-
-    g_lcdBus->write(data);
-}
+static inline void ST7789_WriteData(uint8_t data) { g_lcdBus.write(data); }
 
 /**
  * @brief Run a vendor-specific initialization sequence for the ST7789 panel
@@ -283,17 +259,10 @@ static inline void ST7789_WriteData(uint8_t data) {
  * @return void
  */
 static void lcdRunVendorInit() {
-    if (g_lcdBus == nullptr) {
-        Logger::error("No data bus for LCD", "DisplayManager");
-
-        return;
-    };
-
-    g_lcdBus->beginWrite();
+    g_lcdBus.beginWrite();
 
     ST7789_WriteCommand(ST7789_SLEEP_OUT);
     delay(ST7789_SLEEP_DELAY_MS);
-    yield();
 
     ST7789_WriteCommand(ST7789_PORCH);
     ST7789_WriteData(ST7789_PORCH_PARAM_HS);
@@ -301,103 +270,81 @@ static void lcdRunVendorInit() {
     ST7789_WriteData(ST7789_PORCH_PARAM_DUMMY);
     ST7789_WriteData(ST7789_PORCH_PARAM_HBP);
     ST7789_WriteData(ST7789_PORCH_PARAM_VBP);
-    yield();
 
     ST7789_WriteCommand(ST7789_TEARING_EFFECT);
     ST7789_WriteData(ST7789_TEARING_PARAM_OFF);
-    yield();
 
     ST7789_WriteCommand(ST7789_MEMORY_ACCESS_CONTROL);
     ST7789_WriteData(ST7789_MADCTL_PARAM_DEFAULT);
-    yield();
 
     ST7789_WriteCommand(ST7789_COLORMODE);
     ST7789_WriteData(ST7789_COLORMODE_RGB565);
-    yield();
 
     ST7789_WriteCommand(ST7789_POWER_B7);
     ST7789_WriteData(ST7789_B7_PARAM_DEFAULT);
-    yield();
 
     ST7789_WriteCommand(ST7789_POWER_BB);
     ST7789_WriteData(ST7789_BB_PARAM_VOLTAGE);
-    yield();
 
     ST7789_WriteCommand(ST7789_POWER_C0);
     ST7789_WriteData(ST7789_C0_PARAM_1);
-    yield();
 
     ST7789_WriteCommand(ST7789_POWER_C2);
     ST7789_WriteData(ST7789_C2_PARAM_1);
-    yield();
 
     ST7789_WriteCommand(ST7789_POWER_C3);
     ST7789_WriteData(ST7789_C3_PARAM_1);
-    yield();
 
     ST7789_WriteCommand(ST7789_POWER_C4);
     ST7789_WriteData(ST7789_C4_PARAM_1);
-    yield();
 
     ST7789_WriteCommand(ST7789_POWER_C6);
     ST7789_WriteData(ST7789_C6_PARAM_1);
-    yield();
 
     ST7789_WriteCommand(ST7789_POWER_D6);
     ST7789_WriteData(ST7789_D6_PARAM_1);
-    yield();
 
     ST7789_WriteCommand(ST7789_POWER_D0);
     ST7789_WriteData(ST7789_D0_PARAM_1);
     ST7789_WriteData(ST7789_D0_PARAM_2);
-    yield();
 
     ST7789_WriteCommand(ST7789_POWER_D6);
     ST7789_WriteData(ST7789_D6_PARAM_1);
-    yield();
 
     ST7789_WriteCommand(ST7789_GAMMA_POS);
     for (uint8_t v : ST7789_GAMMA_POS_DATA) {
         ST7789_WriteData(v);
     }
-    yield();
 
     ST7789_WriteCommand(ST7789_GAMMA_NEG);
     for (uint8_t v : ST7789_GAMMA_NEG_DATA) {
         ST7789_WriteData(v);
     }
-    yield();
 
     ST7789_WriteCommand(ST7789_GAMMA_CTRL);
     for (uint8_t v : ST7789_GAMMA_CTRL_DATA) {
         ST7789_WriteData(v);
     }
-    yield();
 
     ST7789_WriteCommand(ST7789_INVERSION_ON);
-    yield();
 
     ST7789_WriteCommand(ST7789_DISPLAY_ON);
-    yield();
 
     ST7789_WriteCommand(ST7789_CASET);
     ST7789_WriteData(ST7789_ADDR_START_HIGH);
     ST7789_WriteData(ST7789_ADDR_START_LOW);
     ST7789_WriteData(ST7789_ADDR_END_HIGH);
     ST7789_WriteData(ST7789_ADDR_END_LOW);
-    yield();
 
     ST7789_WriteCommand(ST7789_RASET);
     ST7789_WriteData(ST7789_ADDR_START_HIGH);
     ST7789_WriteData(ST7789_ADDR_START_LOW);
     ST7789_WriteData(ST7789_ADDR_END_HIGH);
     ST7789_WriteData(ST7789_ADDR_END_LOW);
-    yield();
 
     ST7789_WriteCommand(ST7789_RAMWR);
-    yield();
 
-    g_lcdBus->endWrite();
+    g_lcdBus.endWrite();
 }
 
 /**
@@ -408,18 +355,12 @@ static void lcdRunVendorInit() {
  * @return void
  */
 static void lcdHardReset() {
-    int8_t rst_gpio = configManager.getLCDRstGpioSafe();
-    if (rst_gpio < 0) {
-        Logger::warn("No reset GPIO defined", "DisplayManager");
-        return;
-    }
-
-    pinMode((uint8_t)rst_gpio, OUTPUT);
-    digitalWrite((uint8_t)rst_gpio, HIGH);
+    pinMode((uint8_t)LCD_RST_GPIO, OUTPUT);
+    digitalWrite((uint8_t)LCD_RST_GPIO, HIGH);
     delay(LCD_HARDWARE_RESET_DELAY_MS);
-    digitalWrite((uint8_t)rst_gpio, LOW);
+    digitalWrite((uint8_t)LCD_RST_GPIO, LOW);
     delay(LCD_HARDWARE_RESET_DELAY_MS);
-    digitalWrite((uint8_t)rst_gpio, HIGH);
+    digitalWrite((uint8_t)LCD_RST_GPIO, HIGH);
     delay(LCD_HARDWARE_RESET_DELAY_MS);
 }
 
@@ -429,66 +370,26 @@ static void lcdHardReset() {
  * @return void
  */
 static void lcdEnsureInit() {
-    if (!configManager.getLCDEnableSafe() || g_lcdReady || g_lcdInitializing) {
-        return;
-    };
-
-    g_lcdInitializing = true;
-    g_lcdInitAttempts++;
-    g_lcdInitLastMs = millis();
-    g_lcdInitOk = false;
-
     Logger::info("Initialization started", "DisplayManager");
 
     lcdBacklightOn();
-    lcdHardReset();
 
-    if (g_lcd != nullptr) {
-        delete static_cast<Arduino_ST7789*>(g_lcd);
-        g_lcd = nullptr;
-    }
-    if (g_lcdBus != nullptr) {
-        delete static_cast<GeekMagicSPIBus*>(g_lcdBus);
-        g_lcdBus = nullptr;
-    }
-
-    SPI.begin();
-
-    int8_t dc_gpio = configManager.getLCDDcGpioSafe();
-    int8_t cs_gpio = configManager.getLCDCsGpioSafe();
-    bool cs_active_high = configManager.getLCDCsActiveHighSafe();
-    uint32_t spi_hz = configManager.getLCDSpiHzSafe();
-    uint8_t spi_mode = configManager.getLCDSpiModeSafe();
     uint8_t rotation = configManager.getLCDRotationSafe();
-    int16_t lcd_w = configManager.getLCDWidthSafe();
-    int16_t lcd_h = configManager.getLCDHeightSafe();
 
-    g_lcdBus = new GeekMagicSPIBus(dc_gpio, cs_gpio, cs_active_high, (int32_t)spi_hz, (int8_t)spi_mode);
-    g_lcd = new Arduino_ST7789(g_lcdBus, -1, rotation, true, lcd_w, lcd_h);
-
-    g_lcdBus->begin((int32_t)spi_hz, (int8_t)spi_mode);
-
-    g_lcd->begin();
+    // SPI mode 3 is required. This toggles the pin from LOW to HIGH after reset, which my guess
+    // is after reset "initializes" the SPI interface of the display, as CS is tied to GND?
+    // ...strange that SPI_MODE0 will not work as the IC doesn't care about CLK's polarity
+    g_lcdBus.begin((int32_t)LCD_SPI_HZ, (int8_t)LCD_SPI_MODE);
+    lcdHardReset();
+    lcdRunVendorInit();
     delay(LCD_BEGIN_DELAY_MS);
 
-    lcdHardReset();
-    g_lcdBus->begin((int32_t)spi_hz, (int8_t)spi_mode);
+    g_lcd.setRotation(rotation);
 
-    lcdRunVendorInit();
+    Logger::info(("Width=" + String(g_lcd.width()) + " height=" + String(g_lcd.height())).c_str(), "DisplayManager");
 
-    g_lcd->setRotation(rotation);
-
-    g_lcdReady = true;
-    g_lcdInitializing = false;
-    g_lcdInitOk = true;
-
-    Logger::info(
-        ("Pointers g_lcd=" + String((uintptr_t)g_lcd, HEX) + " g_lcdBus=" + String((uintptr_t)g_lcdBus, HEX)).c_str(),
-        "DisplayManager");
-    Logger::info(("Width=" + String(g_lcd->width()) + " height=" + String(g_lcd->height())).c_str(), "DisplayManager");
-
-    g_lcd->fillScreen(LCD_BLACK);
-    g_lcd->setTextColor(LCD_WHITE, LCD_BLACK);
+    g_lcd.fillScreen(LCD_BLACK);
+    g_lcd.setTextColor(LCD_WHITE, LCD_BLACK);
 
     Logger::info("Initialization completed", "DisplayManager");
 }
@@ -579,8 +480,8 @@ static auto lcdWrapTextToBuffer(const String& text, int maxCharsPerLine, int max
  */
 static void lcdDrawTextWrapped(int16_t startX, int16_t startY, const String& text, uint8_t textSize, uint16_t fgColor,
                                uint16_t bgColor, bool clearBg) {
-    const auto screenW = static_cast<int16_t>(g_lcd->width());
-    const auto screenH = static_cast<int16_t>(g_lcd->height());
+    const auto screenW = static_cast<int16_t>(g_lcd.width());
+    const auto screenH = static_cast<int16_t>(g_lcd.height());
 
     if (startX < 0) {
         startX = 0;
@@ -621,16 +522,16 @@ static void lcdDrawTextWrapped(int16_t startX, int16_t startY, const String& tex
 
     if (clearBg) {
         const auto heightPixels = static_cast<int16_t>(static_cast<int>(lineCount) * static_cast<int>(charH));
-        g_lcd->fillRect(startX, startY, static_cast<int16_t>(screenW - startX), static_cast<int16_t>(heightPixels),
-                        bgColor);
+        g_lcd.fillRect(startX, startY, static_cast<int16_t>(screenW - startX), static_cast<int16_t>(heightPixels),
+                       bgColor);
     }
 
-    g_lcd->setTextSize(textSize);
-    g_lcd->setTextColor(fgColor, bgColor);
+    g_lcd.setTextSize(textSize);
+    g_lcd.setTextColor(fgColor, bgColor);
 
     for (int li = 0; li < lineCount; ++li) {
-        g_lcd->setCursor(startX, static_cast<int16_t>(startY + li * charH));
-        g_lcd->print(lines[li].data());
+        g_lcd.setCursor(startX, static_cast<int16_t>(startY + li * charH));
+        g_lcd.print(lines[li].data());
     }
 }
 
@@ -644,34 +545,21 @@ static void lcdDrawTextWrapped(int16_t startX, int16_t startY, const String& tex
 auto DisplayManager::begin() -> void { lcdEnsureInit(); }
 
 /**
- * @brief Check if the display is ready for drawing
- *
- * @return true if ready false otherwise
- */
-auto DisplayManager::isReady() -> bool { return g_lcdReady && g_lcd != nullptr && g_lcdInitOk; }
-
-/**
  * @brief Draw the startup screen on the LCD
  *
  * @return void
  */
 auto DisplayManager::drawStartup(String currentIP) -> void {
-    if (!DisplayManager::isReady()) {
-        Logger::warn("Display not ready", "DisplayManager");
-
-        return;
-    }
-
     int constexpr rgbDelayMs = 1000;
 
-    g_lcd->fillScreen(LCD_RED);
+    g_lcd.fillScreen(LCD_RED);
     delay(rgbDelayMs);
-    g_lcd->fillScreen(LCD_GREEN);
+    g_lcd.fillScreen(LCD_GREEN);
     delay(rgbDelayMs);
-    g_lcd->fillScreen(LCD_BLUE);
+    g_lcd.fillScreen(LCD_BLUE);
     delay(rgbDelayMs);
 
-    g_lcd->fillScreen(LCD_BLACK);
+    g_lcd.fillScreen(LCD_BLACK);
 
     int constexpr titleY = 10;
     int constexpr fontSize = 2;
@@ -687,9 +575,9 @@ auto DisplayManager::drawStartup(String currentIP) -> void {
     const int16_t gap = 20;
     const int16_t boxY = titleY + (THREE_LINES_SPACE * 2) + ONE_LINE_SPACE;
 
-    g_lcd->fillRect(DISPLAY_PADDING, boxY, box, box, LCD_RED);
-    g_lcd->fillRect((int16_t)(DISPLAY_PADDING + box + gap), boxY, box, box, LCD_GREEN);
-    g_lcd->fillRect((int16_t)(DISPLAY_PADDING + (box + gap) * 2), boxY, box, box, LCD_BLUE);
+    g_lcd.fillRect(DISPLAY_PADDING, boxY, box, box, LCD_RED);
+    g_lcd.fillRect((int16_t)(DISPLAY_PADDING + box + gap), boxY, box, box, LCD_GREEN);
+    g_lcd.fillRect((int16_t)(DISPLAY_PADDING + (box + gap) * 2), boxY, box, box, LCD_BLUE);
 
     yield();
 
@@ -726,22 +614,18 @@ void DisplayManager::drawTextWrapped(int16_t xPos, int16_t yPos, const String& t
  */
 void DisplayManager::drawLoadingBar(float progress, int yPos, int barWidth, int barHeight, uint16_t fgColor,
                                     uint16_t bgColor) {
-    if ((g_lcd == nullptr) || (!g_lcdReady)) {
-        return;
-    }
-
-    auto barXPos = (static_cast<int32_t>(configManager.getLCDWidthSafe()) - static_cast<int32_t>(barWidth)) / 2;
+    auto barXPos = (static_cast<int32_t>(LCD_W) - static_cast<int32_t>(barWidth)) / 2;
     auto barXPos16 = static_cast<int16_t>(barXPos);
     auto yPos16 = static_cast<int16_t>(yPos);
     auto barWidth16 = static_cast<int16_t>(barWidth);
     auto barHeight16 = static_cast<int16_t>(barHeight);
 
-    g_lcd->fillRect(barXPos16, yPos16, barWidth16, barHeight16, bgColor);
+    g_lcd.fillRect(barXPos16, yPos16, barWidth16, barHeight16, bgColor);
 
     auto fillWidthF = static_cast<float>(barWidth) * progress;
     auto fillWidth16 = static_cast<int16_t>(fillWidthF);
     if (fillWidth16 > 0) {
-        g_lcd->fillRect(barXPos16, yPos16, fillWidth16, barHeight16, fgColor);
+        g_lcd.fillRect(barXPos16, yPos16, fillWidth16, barHeight16, fgColor);
     }
 
     yield();
@@ -817,8 +701,4 @@ auto DisplayManager::update() -> void { s_gif.update(); }
  *
  * @return void
  */
-auto DisplayManager::clearScreen() -> void {
-    if (g_lcdReady && g_lcd != nullptr) {
-        g_lcd->fillScreen(LCD_BLACK);
-    }
-}
+auto DisplayManager::clearScreen() -> void { g_lcd.fillScreen(LCD_BLACK); }
