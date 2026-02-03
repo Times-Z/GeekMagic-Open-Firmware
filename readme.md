@@ -204,7 +204,15 @@ cp data/config-{hellocubic|smalltv}.example data/config.json
 
 You can edit this JSON file to configure your firmware, for example by modifying `wifi_ssid` and `wifi_password` so that your device connects to your network
 
-Note: The Wi-Fi credentials in config.json are migrated to EEPROM “secure storage” on first boot. After that, the Wi-Fi credentials are erased from config.json
+Note: The Wi-Fi credentials and API token in config.json are migrated to EEPROM "secure storage" on first boot. After that, these credentials are erased from config.json
+
+**Configuration options:**
+
+- `wifi_ssid`: Your WiFi network name
+- `wifi_password`: Your WiFi password
+- `api_token`: Bearer token for API authentication
+- `lcd_rotation`: Display rotation setting
+- `ntp_server`: NTP server for time synchronization
 
 Security of stored secrets:
 

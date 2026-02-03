@@ -22,6 +22,7 @@
 
 #include "web/Webserver.h"
 
+void setCorsHeaders(Webserver* webserver);
 void registerApiEndpoints(Webserver* webserver);
 void handleOtaUpload(Webserver* webserver, int mode);
 void handleOtaFinished(Webserver* webserver);

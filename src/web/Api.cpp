@@ -126,6 +126,26 @@ void registerApiEndpoints(Webserver* webserver) {
 
     // @openapi {get} /gif version=v1 summary="List GIFs" responses=200:application/json
     webserver->raw().on("/api/v1/gif", HTTP_GET, [webserver]() { handleListGifs(webserver); });
+
+    webserver->raw().onNotFound([webserver]() {
+        if (webserver->raw().method() == HTTP_OPTIONS) {
+            setCorsHeaders(webserver);
+            webserver->raw().send(HTTP_CODE_OK);
+        }
+    });
+}
+
+/**
+ * @brief Set CORS headers for API responses
+ * @param webserver Pointer to the Webserver instance
+ *
+ * @return void
+ */
+void setCorsHeaders(Webserver* webserver) {
+    webserver->raw().sendHeader("Access-Control-Allow-Origin", "*");
+    webserver->raw().sendHeader("Access-Control-Allow-Methods", "GET, POST, DELETE, OPTIONS");
+    webserver->raw().sendHeader("Access-Control-Allow-Headers", "Content-Type, Authorization");
+    webserver->raw().sendHeader("Access-Control-Max-Age", "3600");
 }
 
 /**
@@ -141,6 +161,8 @@ void handleOtaStatus(Webserver* webserver) {
 
     String json;
     serializeJson(doc, json);
+
+    setCorsHeaders(webserver);
     webserver->raw().send(HTTP_CODE_OK, "application/json", json);
 }
 
@@ -157,6 +179,8 @@ void handleOtaCancel(Webserver* webserver) {
 
     String json;
     serializeJson(doc, json);
+
+    setCorsHeaders(webserver);
     webserver->raw().send(HTTP_CODE_OK, "application/json", json);
 }
 
@@ -201,6 +225,8 @@ void handleListGifs(Webserver* webserver) {
 
     String json;
     serializeJson(doc, json);
+
+    setCorsHeaders(webserver);
     webserver->raw().send(HTTP_CODE_OK, "application/json", json);
 }
 
@@ -215,12 +241,14 @@ void handleListGifs(Webserver* webserver) {
 void handleGifUploadStart(const String& currentFilename, File& gifFile, bool& uploadError) {
     uploadError = false;
     Logger::info((String("UPLOAD_FILE_START for: ") + currentFilename).c_str(), "API::GIF");
+
     if (!LittleFS.exists("/gif")) {
         Logger::info("/gif directory does not exist, creating...", "API::GIF");
         if (!LittleFS.mkdir("/gif")) {
             Logger::error("Failed to create /gif directory!", "API::GIF");
         }
     }
+
     gifFile = LittleFS.open(currentFilename, "w");
     if (!gifFile) {
         uploadError = true;
@@ -242,6 +270,7 @@ void handleGifUploadStart(const String& currentFilename, File& gifFile, bool& up
 void handleGifUploadWrite(HTTPUpload& upload, File& gifFile, bool& uploadError) {
     if (!uploadError && gifFile) {
         size_t total = 0;
+
         while (total < upload.currentSize) {
             size_t remaining = upload.currentSize - total;
             int toWrite = static_cast<int>(remaining > static_cast<size_t>(INT_MAX) ? INT_MAX : remaining);
@@ -252,6 +281,7 @@ void handleGifUploadWrite(HTTPUpload& upload, File& gifFile, bool& uploadError) 
                 uploadError = true;
                 break;
             }
+
             total += written;
         }
     } else {
@@ -284,10 +314,13 @@ void handleGifUploadEnd(const String& currentFilename, File& gifFile) {
  */
 void handleGifUploadAborted(const String& currentFilename, File& gifFile, bool& uploadError) {
     Logger::warn("UPLOAD_FILE_ABORTED", "API::GIF");
+
     if (gifFile) {
         gifFile.close();
+
         Logger::warn("File closed after abort", "API::GIF");
     }
+
     if (!currentFilename.isEmpty()) {
         if (LittleFS.remove(currentFilename)) {
             Logger::warn((String("Removed incomplete file: ") + currentFilename).c_str(), "API::GIF");
@@ -295,6 +328,7 @@ void handleGifUploadAborted(const String& currentFilename, File& gifFile, bool& 
             Logger::error((String("Failed to remove incomplete file: ") + currentFilename).c_str(), "API::GIF");
         }
     }
+
     uploadError = true;
 }
 
@@ -308,18 +342,24 @@ void handleGifUploadAborted(const String& currentFilename, File& gifFile, bool& 
  */
 void sendGifUploadResult(Webserver* webserver, const String& currentFilename, bool uploadError) {
     JsonDocument doc;
+
     if (uploadError) {
         doc["status"] = "error";
         doc["message"] = "Error during GIF upload";
+
         Logger::error("GIF UPLOAD Error during upload", "API::GIF");
     } else {
         doc["status"] = "success";
         doc["message"] = "GIF uploaded successfully";
         doc["filename"] = currentFilename;
+
         Logger::info((String("Gif upload success, filename: ") + currentFilename).c_str(), "API::GIF");
     }
+
     String json;
     serializeJson(doc, json);
+
+    setCorsHeaders(webserver);
     webserver->raw().send(HTTP_CODE_OK, "application/json", json);
 }
 
@@ -376,6 +416,7 @@ void handleReboot(Webserver* webserver) {
     String json;
     serializeJson(doc, json);
 
+    setCorsHeaders(webserver);
     webserver->raw().send(HTTP_CODE_OK, "application/json", json);
 
     delay(rebootDelayMs);
@@ -391,9 +432,13 @@ void handleNtpSync(Webserver* webserver) {
     if (ntpClient == nullptr) {
         doc["status"] = "error";
         doc["message"] = "NTP client not initialized";
+
         String json;
         serializeJson(doc, json);
+
+        setCorsHeaders(webserver);
         webserver->raw().send(HTTP_CODE_INTERNAL_ERROR, "application/json", json);
+
         return;
     }
 
@@ -404,6 +449,8 @@ void handleNtpSync(Webserver* webserver) {
 
     String json;
     serializeJson(doc, json);
+
+    setCorsHeaders(webserver);
     webserver->raw().send(HTTP_CODE_OK, "application/json", json);
 }
 
@@ -416,8 +463,11 @@ void handleNtpStatus(Webserver* webserver) {
     if (ntpClient == nullptr) {
         doc["status"] = "error";
         doc["message"] = "NTP client not initialized";
+
         String json;
         serializeJson(doc, json);
+
+        setCorsHeaders(webserver);
         webserver->raw().send(HTTP_CODE_INTERNAL_ERROR, "application/json", json);
         return;
     }
@@ -428,6 +478,8 @@ void handleNtpStatus(Webserver* webserver) {
 
     String json;
     serializeJson(doc, json);
+
+    setCorsHeaders(webserver);
     webserver->raw().send(HTTP_CODE_OK, "application/json", json);
 }
 
@@ -440,6 +492,8 @@ void handleNtpConfigGet(Webserver* webserver) {
 
     String json;
     serializeJson(doc, json);
+
+    setCorsHeaders(webserver);
     webserver->raw().send(HTTP_CODE_OK, "application/json", json);
 }
 
@@ -455,6 +509,7 @@ void handleNtpConfigSet(Webserver* webserver) {
         String json;
 
         serializeJson(doc, json);
+        setCorsHeaders(webserver);
         webserver->raw().send(HTTP_CODE_BAD_REQUEST, "application/json", json);
 
         return;
@@ -472,6 +527,7 @@ void handleNtpConfigSet(Webserver* webserver) {
         String json;
         serializeJson(doc, json);
 
+        setCorsHeaders(webserver);
         webserver->raw().send(HTTP_CODE_BAD_REQUEST, "application/json", json);
 
         return;
@@ -487,6 +543,7 @@ void handleNtpConfigSet(Webserver* webserver) {
         String json;
         serializeJson(doc, json);
 
+        setCorsHeaders(webserver);
         webserver->raw().send(HTTP_CODE_BAD_REQUEST, "application/json", json);
 
         return;
@@ -503,6 +560,7 @@ void handleNtpConfigSet(Webserver* webserver) {
 
         serializeJson(doc, json);
 
+        setCorsHeaders(webserver);
         webserver->raw().send(HTTP_CODE_INTERNAL_ERROR, "application/json", json);
 
         return;
@@ -519,6 +577,7 @@ void handleNtpConfigSet(Webserver* webserver) {
     String json;
     serializeJson(doc, json);
 
+    setCorsHeaders(webserver);
     webserver->raw().send(HTTP_CODE_OK, "application/json", json);
 }
 
@@ -572,6 +631,8 @@ void handleOtaFinished(Webserver* webserver) {
 
     String json;
     serializeJson(doc, json);
+
+    setCorsHeaders(webserver);
     webserver->raw().send(HTTP_CODE_OK, "application/json", json);
 
     if (!otaError) {
@@ -602,6 +663,7 @@ void handlePlayGif(Webserver* webserver) {
 
         serializeJson(resp, jsonOut);
 
+        setCorsHeaders(webserver);
         webserver->raw().send(HTTP_CODE_INTERNAL_ERROR, "application/json", jsonOut);
 
         return;
@@ -615,6 +677,8 @@ void handlePlayGif(Webserver* webserver) {
 
         String jsonOut;
         serializeJson(resp, jsonOut);
+
+        setCorsHeaders(webserver);
         webserver->raw().send(HTTP_CODE_INTERNAL_ERROR, "application/json", jsonOut);
 
         return;
@@ -641,6 +705,7 @@ void handlePlayGif(Webserver* webserver) {
         String jsonOut;
         serializeJson(resp, jsonOut);
 
+        setCorsHeaders(webserver);
         webserver->raw().send(HTTP_CODE_NOT_FOUND, "application/json", jsonOut);
 
         return;
@@ -656,6 +721,8 @@ void handlePlayGif(Webserver* webserver) {
     String jsonOut;
 
     serializeJson(resp, jsonOut);
+
+    setCorsHeaders(webserver);
     webserver->raw().send(HTTP_CODE_OK, "application/json", jsonOut);
 }
 
@@ -672,6 +739,7 @@ void handleStopGif(Webserver* webserver) {
     String jsonOut;
     serializeJson(resp, jsonOut);
 
+    setCorsHeaders(webserver);
     webserver->raw().send(HTTP_CODE_OK, "application/json", jsonOut);
 }
 
@@ -691,6 +759,8 @@ void handleDeleteGif(Webserver* webserver) {
         String jsonOut;
 
         serializeJson(resp, jsonOut);
+
+        setCorsHeaders(webserver);
         webserver->raw().send(HTTP_CODE_INTERNAL_ERROR, "application/json", jsonOut);
 
         return;
@@ -705,6 +775,8 @@ void handleDeleteGif(Webserver* webserver) {
         String jsonOut;
 
         serializeJson(resp, jsonOut);
+
+        setCorsHeaders(webserver);
         webserver->raw().send(HTTP_CODE_INTERNAL_ERROR, "application/json", jsonOut);
 
         return;
@@ -723,6 +795,8 @@ void handleDeleteGif(Webserver* webserver) {
         String jsonOut;
 
         serializeJson(resp, jsonOut);
+
+        setCorsHeaders(webserver);
         webserver->raw().send(HTTP_CODE_NOT_FOUND, "application/json", jsonOut);
 
         return;
@@ -737,6 +811,7 @@ void handleDeleteGif(Webserver* webserver) {
         String jsonOut;
         serializeJson(resp, jsonOut);
 
+        setCorsHeaders(webserver);
         webserver->raw().send(HTTP_CODE_OK, "application/json", jsonOut);
 
         Logger::info((String("Removed file: ") + path).c_str(), "API::GIF");
@@ -747,6 +822,8 @@ void handleDeleteGif(Webserver* webserver) {
 
         String jsonOut;
         serializeJson(resp, jsonOut);
+
+        setCorsHeaders(webserver);
         webserver->raw().send(HTTP_CODE_INTERNAL_ERROR, "application/json", jsonOut);
 
         Logger::error((String("Failed to remove file: ") + path).c_str(), "API::GIF");
@@ -766,6 +843,8 @@ void handleWifiScan(Webserver* webserver) {
 
     String out;
     serializeJson(doc["networks"], out);
+
+    setCorsHeaders(webserver);
     webserver->raw().send(HTTP_CODE_OK, "application/json", out);
 }
 
@@ -785,6 +864,8 @@ void handleWifiConnect(Webserver* webserver) {
 
         String jsonOut;
         serializeJson(resp, jsonOut);
+
+        setCorsHeaders(webserver);
         webserver->raw().send(HTTP_CODE_INTERNAL_ERROR, "application/json", jsonOut);
 
         return;
@@ -802,6 +883,8 @@ void handleWifiConnect(Webserver* webserver) {
         String jsonOut;
 
         serializeJson(resp, jsonOut);
+
+        setCorsHeaders(webserver);
         webserver->raw().send(HTTP_CODE_INTERNAL_ERROR, "application/json", jsonOut);
 
         return;
@@ -830,6 +913,7 @@ void handleWifiConnect(Webserver* webserver) {
     String jsonOut;
     serializeJson(resp, jsonOut);
 
+    setCorsHeaders(webserver);
     webserver->raw().send(HTTP_CODE_OK, "application/json", jsonOut);
 }
 
@@ -848,6 +932,7 @@ void handleWifiStatus(Webserver* webserver) {
     String jsonOut;
     serializeJson(resp, jsonOut);
 
+    setCorsHeaders(webserver);
     webserver->raw().send(HTTP_CODE_OK, "application/json", jsonOut);
 }
 
