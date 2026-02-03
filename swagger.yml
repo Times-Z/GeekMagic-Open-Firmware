@@ -3,7 +3,8 @@ info:
   title: "GeekMagic-Open-Firmware API"
   version: "1.0.0"
 servers:
-  - url: "http://{host}/"
+  - 
+    url: "http://{host}/"
     description: "API Server for version 1"
     variables:
       host:
@@ -12,7 +13,7 @@ paths:
   /api/v1/wifi/scan:
     get:
       summary: "Scan available WiFi networks"
-      operationId: "op_get_api_v1_wifi_scan"
+      operationId: "op_v1_get_api_v1_wifi_scan"
       responses:
         200:
           description: ""
@@ -20,10 +21,12 @@ paths:
             application/json:
               schema:
                 type: "object"
+      tags:
+        - "v1"
   /api/v1/wifi/connect:
     post:
       summary: "Connect to a WiFi network"
-      operationId: "op_post_api_v1_wifi_connect"
+      operationId: "op_v1_post_api_v1_wifi_connect"
       responses:
         200:
           description: ""
@@ -31,6 +34,8 @@ paths:
             application/json:
               schema:
                 type: "object"
+      tags:
+        - "v1"
       requestBody:
         content:
           application/json:
@@ -40,7 +45,7 @@ paths:
   /api/v1/wifi/status:
     get:
       summary: "Get WiFi connection status"
-      operationId: "op_get_api_v1_wifi_status"
+      operationId: "op_v1_get_api_v1_wifi_status"
       responses:
         200:
           description: ""
@@ -48,10 +53,12 @@ paths:
             application/json:
               schema:
                 type: "object"
+      tags:
+        - "v1"
   /api/v1/ntp/sync:
     post:
       summary: "Trigger NTP sync"
-      operationId: "op_post_api_v1_ntp_sync"
+      operationId: "op_v1_post_api_v1_ntp_sync"
       responses:
         200:
           description: ""
@@ -59,10 +66,12 @@ paths:
             application/json:
               schema:
                 type: "object"
+      tags:
+        - "v1"
   /api/v1/ntp/status:
     get:
       summary: "Get NTP status"
-      operationId: "op_get_api_v1_ntp_status"
+      operationId: "op_v1_get_api_v1_ntp_status"
       responses:
         200:
           description: ""
@@ -70,10 +79,12 @@ paths:
             application/json:
               schema:
                 type: "object"
+      tags:
+        - "v1"
   /api/v1/ntp/config:
     get:
       summary: "Get NTP configuration"
-      operationId: "op_get_api_v1_ntp_config"
+      operationId: "op_v1_get_api_v1_ntp_config"
       responses:
         200:
           description: ""
@@ -81,9 +92,11 @@ paths:
             application/json:
               schema:
                 type: "object"
+      tags:
+        - "v1"
     post:
       summary: "Set NTP configuration"
-      operationId: "op_post_api_v1_ntp_config"
+      operationId: "op_v1_post_api_v1_ntp_config"
       responses:
         200:
           description: ""
@@ -91,6 +104,8 @@ paths:
             application/json:
               schema:
                 type: "object"
+      tags:
+        - "v1"
       requestBody:
         content:
           application/json:
@@ -100,7 +115,7 @@ paths:
   /api/v1/reboot:
     post:
       summary: "Reboot the device"
-      operationId: "op_post_api_v1_reboot"
+      operationId: "op_v1_post_api_v1_reboot"
       responses:
         200:
           description: ""
@@ -108,10 +123,12 @@ paths:
             application/json:
               schema:
                 type: "object"
+      tags:
+        - "v1"
   /api/v1/ota/fw:
     post:
       summary: "Upload firmware (OTA)"
-      operationId: "op_post_api_v1_ota_fw"
+      operationId: "op_v1_post_api_v1_ota_fw"
       responses:
         200:
           description: ""
@@ -119,6 +136,8 @@ paths:
             application/json:
               schema:
                 type: "object"
+      tags:
+        - "v1"
       requestBody:
         content:
           multipart/form-data:
@@ -128,7 +147,7 @@ paths:
   /api/v1/ota/fs:
     post:
       summary: "Upload filesystem (OTA)"
-      operationId: "op_post_api_v1_ota_fs"
+      operationId: "op_v1_post_api_v1_ota_fs"
       responses:
         200:
           description: ""
@@ -136,6 +155,8 @@ paths:
             application/json:
               schema:
                 type: "object"
+      tags:
+        - "v1"
       requestBody:
         content:
           multipart/form-data:
@@ -145,7 +166,7 @@ paths:
   /api/v1/ota/status:
     get:
       summary: "Get OTA status"
-      operationId: "op_get_api_v1_ota_status"
+      operationId: "op_v1_get_api_v1_ota_status"
       responses:
         200:
           description: ""
@@ -153,10 +174,12 @@ paths:
             application/json:
               schema:
                 type: "object"
+      tags:
+        - "v1"
   /api/v1/ota/cancel:
     post:
       summary: "Cancel OTA"
-      operationId: "op_post_api_v1_ota_cancel"
+      operationId: "op_v1_post_api_v1_ota_cancel"
       responses:
         200:
           description: ""
@@ -164,10 +187,12 @@ paths:
             application/json:
               schema:
                 type: "object"
+      tags:
+        - "v1"
   /api/v1/gif:
     post:
       summary: "Upload a GIF"
-      operationId: "op_post_api_v1_gif"
+      operationId: "op_v1_post_api_v1_gif"
       responses:
         200:
           description: ""
@@ -175,6 +200,8 @@ paths:
             application/json:
               schema:
                 type: "object"
+      tags:
+        - "v1"
       requestBody:
         content:
           multipart/form-data:
@@ -183,7 +210,7 @@ paths:
         required: true
     delete:
       summary: "Delete a GIF by name"
-      operationId: "op_delete_api_v1_gif"
+      operationId: "op_v1_delete_api_v1_gif"
       responses:
         200:
           description: ""
@@ -191,6 +218,8 @@ paths:
             application/json:
               schema:
                 type: "object"
+      tags:
+        - "v1"
       requestBody:
         content:
           application/json:
@@ -199,7 +228,7 @@ paths:
         required: true
     get:
       summary: "List GIFs"
-      operationId: "op_get_api_v1_gif"
+      operationId: "op_v1_get_api_v1_gif"
       responses:
         200:
           description: ""
@@ -207,10 +236,12 @@ paths:
             application/json:
               schema:
                 type: "object"
+      tags:
+        - "v1"
   /api/v1/gif/play:
     post:
       summary: "Play a GIF by name"
-      operationId: "op_post_api_v1_gif_play"
+      operationId: "op_v1_post_api_v1_gif_play"
       responses:
         200:
           description: ""
@@ -218,6 +249,8 @@ paths:
             application/json:
               schema:
                 type: "object"
+      tags:
+        - "v1"
       requestBody:
         content:
           application/json:
@@ -227,7 +260,7 @@ paths:
   /api/v1/gif/stop:
     post:
       summary: "Stop GIF playback"
-      operationId: "op_post_api_v1_gif_stop"
+      operationId: "op_v1_post_api_v1_gif_stop"
       responses:
         200:
           description: ""
@@ -235,3 +268,9 @@ paths:
             application/json:
               schema:
                 type: "object"
+      tags:
+        - "v1"
+tags:
+  - 
+    name: "v1"
+    description: "API v1 endpoints"

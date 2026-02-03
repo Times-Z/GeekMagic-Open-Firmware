@@ -14,7 +14,20 @@ import argparse
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
-PATTERN = re.compile(r"@openapi\s+\{(?P<method>\w+)\}\s+(?P<path>\S+)(?:\s+summary=\"(?P<summary>[^\"]*)\")?(?:\s+requestBody=(?P<requestBody>\S+))?(?:\s+responses=(?P<responses>[^\n]+))?")
+PATTERN = re.compile(
+    r"@openapi\s+\{(?P<method>\w+)\}\s+(?P<path>\S+)"
+    r"(?:\s+version=(?P<version>\S+))?"
+    r"(?:\s+summary=\"(?P<summary>[^\"]*)\")?"
+    r"(?:\s+requestBody=(?P<requestBody>\S+))?"
+    r"(?:\s+responses=(?P<responses>[^\n]+))?"
+)
+
+
+def _derive_version(path):
+    match = re.search(r"/api/(v\d+)(?:/|$)", path)
+    if match:
+        return match.group(1)
+    return None
 
 
 def collect_annotations():
@@ -51,15 +64,37 @@ def build_openapi(annotations):
         'paths': {},
     }
 
+    tags_seen = set()
+
     for a in annotations:
         path = a['path']
         method = a['method'].lower()
         summary = a.get('summary') or ''
         requestBody = a.get('requestBody')
         responses = a.get('responses') or '200:application/json'
+        version = a.get('version') or _derive_version(path)
 
-        path_obj = api['paths'].setdefault(path, {})
-        op = {'summary': summary, 'operationId': f"op_{method}_{path.strip('/').replace('/', '_')}", 'responses': {}}
+        full_path = path
+        if version and not path.startswith('/api/'):
+            normalized = path if path.startswith('/') else f"/{path}"
+            full_path = f"/api/{version}{normalized}"
+
+        path_obj = api['paths'].setdefault(full_path, {})
+        operation_id_parts = ["op"]
+        if version:
+            operation_id_parts.append(version)
+        operation_id_parts.append(method)
+        operation_id_parts.append(full_path.strip('/').replace('/', '_'))
+
+        op = {
+            'summary': summary,
+            'operationId': "_".join(operation_id_parts),
+            'responses': {},
+        }
+
+        if version:
+            op['tags'] = [version]
+            tags_seen.add(version)
 
         # parse responses like 200:application/json,404:application/json
         for resp in [r.strip() for r in responses.split(',') if r.strip()]:
@@ -79,6 +114,9 @@ def build_openapi(annotations):
             }
 
         path_obj[method] = op
+
+    if tags_seen:
+        api['tags'] = [{'name': tag, 'description': f"API {tag} endpoints"} for tag in sorted(tags_seen)]
 
     return api
 
