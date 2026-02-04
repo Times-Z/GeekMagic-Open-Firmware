@@ -108,58 +108,108 @@ The display is connected to the ESP8266 using the following GPIO pins:
 
 ### Initialization sequence
 
-1. **Backlight control**: GPIO 5 is set as output and driven LOW to turn on the backlight
-2. **Hardware reset**: The RST pin (GPIO 2) is toggled to reset the ST7789 controller
-3. **SPI bus setup**: Hardware SPI is initialized with 40 MHz clock speed and Mode 3
-4. **Display controller init**: The ST7789 is configured using a vendor-specific initialization sequence that includes:
-    - Sleep out (0x11)
-    - Porch settings (0xB2)
-    - Tearing effect on (0x35)
-    - Memory access control/MADCTL (0x36)
-    - Color mode to 16-bit RGB565 (0x3A)
-    - Various power control settings (0xB7, 0xBB, 0xC0-0xC6, 0xD0, 0xD6)
-    - Gamma correction settings (0xE0, 0xE1, 0xE4)
-    - Display inversion on (0x21)
-    - Display on (0x29)
-    - Full window setup and RAMWR command (0x2A, 0x2B, 0x2C)
-5. **Rotation aplied**: Display rotation is set to mode 4 for proper orientation with cube
+The firmware initializes the display through the `lcdEnsureInit()` function which performs the following steps:
 
-### Communication protocol
+1. **Backlight activation**: GPIO 5 is configured as output and driven based on the `LCD_BACKLIGHT_ACTIVE_LOW` configuration (typically driven LOW to turn on the backlight)
 
-The display uses **SPI** protocol for communication:
+2. **SPI bus initialization**: Hardware SPI is initialized with:
+    - Clock speed: Defined by `LCD_SPI_HZ` (typically 40 MHz)
+    - Mode: Defined by `LCD_SPI_MODE` (Mode 3 required for this display)
 
-1. **Command/data mode**: The DC pin indicates whether the data on MOSI is a command (DC=LOW) or pixel data (DC=HIGH)
-2. **Data transfer**: Data is shifted out on the MOSI pin, synchronized with the SCK clock signal
+3. **Hardware reset sequence**: The RST pin (GPIO 2) is toggled with timing:
+    - Set HIGH → wait 120ms → Set LOW → wait 120ms → Set HIGH → wait 120ms
+
+4. **Display controller initialization**: A vendor-specific initialization sequence is executed via `lcdRunVendorInit()` which includes:
+    - Sleep out (0x11) with 120ms delay
+    - Porch settings (0xB2) with parameters: HS=0x1F, VS=0x1F, Dummy=0x00, HBP=0x33, VBP=0x33
+    - Tearing effect (0x35) set to OFF (0x00)
+    - Memory access control/MADCTL (0x36) set to default (0x00)
+    - Color mode (0x3A) set to 16-bit RGB565 (0x05)
+    - Power control settings:
+        - Power B7 (0xB7) = 0x00
+        - Power BB (0xBB) = 0x36
+        - Power C0 (0xC0) = 0x2C
+        - Power C2 (0xC2) = 0x01
+        - Power C3 (0xC3) = 0x13
+        - Power C4 (0xC4) = 0x20
+        - Power C6 (0xC6) = 0x13
+        - Power D0 (0xD0) = 0xA4, 0xA1
+        - Power D6 (0xD6) = 0xA1
+    - Gamma correction (0xE0, 0xE1) with predefined curves (14 bytes each)
+    - Gamma control (0xE4) = 0x1D, 0x00, 0x00
+    - Display inversion (0x21)
+    - Display ON (0x29)
+    - Column address setup (0x2A): 0x00 to 0xEF
+    - Row address setup (0x2B): 0x00 to 0xEF
+    - RAM write command (0x2C)
+
+5. **Post-initialization**:
+    - 10ms delay for display stabilization
+    - Display rotation is applied (from configuration via `getLCDRotationSafe()`)
+    - Screen is filled with black and text color is set to white
+
+### SPI Communication Protocol
+
+The ST7789 communicates via SPI with the following signal handling:
+
+1. **Clock**: SCK (GPIO 14) - drives the SPI clock at the configured frequency (40 MHz)
+2. **Data**: MOSI (GPIO 13) - carries command bytes or pixel data from ESP8266 to display
+3. **Chip Select**: CS is permanently tied to GND (always active)
+4. **Data/Command mode**: DC pin (GPIO 0) indicates the type of data:
+    - DC = LOW: Command byte follows
+    - DC = HIGH: Pixel/parameter data follows
+
+The display requires **SPI Mode 3** (CPOL=1, CPHA=1) which is explicitly configured in the initialization sequence.
 
 ### Drawing to the screen
 
-The firmware uses the Arduino_GFX library with a custom ESP8266SPIWithCustomCS bus driver that handles the active-high CS polarity. Graphics operations:
+The firmware uses the **Arduino_GFX library** with a custom ST7789 display driver. Drawing operations are managed through the global `g_lcd` instance:
 
-1. **Write commands**: Set DC LOW, send command bytes via SPI
-2. **Write data**: Set DC HIGH, send pixel data via SPI
+1. **Text rendering**:
+    - Implemented via `lcdDrawTextWrapped()` which provides word-wrapping support
+    - Text wrapping algorithm handles spaces, tabs, and newlines
+    - Text size is scaled by integer multipliers (6×8 pixels per character at size 1)
+    - Supports automatic line wrapping with configurable character and line limits
+
+2. **Graphics primitives**:
+    - Direct access to Arduino_GFX API via `DisplayManager::getGfx()`
+    - Rectangle filling: `fillRect(x, y, width, height, color)`
+    - Full screen fills: `fillScreen(color)`
+    - Direct SPI writes are batched between `beginWrite()` and `endWrite()` calls
+
+3. **GIF playback**:
+    - Managed via the `Gif` class instance `s_gif`
+    - Supports full-screen GIF playback with optional duration limits
+    - Can be stopped at any time via `DisplayManager::stopGif()`
+
+4. **Performance optimizations**:
+    - **Hardware SPI**: Uses ESP8266's hardware SPI peripheral (40 MHz) for efficient transfers
+    - **Batch writes**: Commands and data are batched between `beginWrite()`/`endWrite()` calls
+    - **Yield calls**: `yield()` is called during long operations to prevent watchdog timeout
+    - **Direct streaming**: GIF frames are streamed directly without intermediate buffering
 
 ### Color format
 
-Colors are encoded in RGB565 format (16-bit):
+The display uses **RGB565** (16-bit) color encoding:
 
-- Red: 5 bits (bits 15-11)
-- Green: 6 bits (bits 10-5)
-- Blue: 5 bits (bits 4-0)
+- **Red channel**: 5 bits (bits 15-11)
+- **Green channel**: 6 bits (bits 10-5)
+- **Blue channel**: 5 bits (bits 4-0)
 
-Example colors:
+This format provides 65,536 distinct colors and is the standard for ST7789 displays.
 
-- Black: 0x0000
-- White: 0xFFFF
-- Red: 0xF800
-- Green: 0x07E0
-- Blue: 0x001F
+**Common color constants** (defined in DisplayManager.h):
 
-### Performance optimizations
+- Black: `0x0000`
+- White: `0xFFFF`
+- Red: `0xF800`
+- Green: `0x07E0`
+- Blue: `0x001F`
+- Cyan: `0x07FF`
+- Magenta: `0xF81F`
+- Yellow: `0xFFE0`
 
-- **High SPI speed**: 40 MHz clock for fast data transfer
-- **Hardware SPI**: Uses ESP8266's hardware SPI peripheral for efficient transfers
-- **Batch writes**: Multiple operations are batched between beginWrite/endWrite calls
-- **Direct frame buffer writes**: GIF frames are streamed directly to avoid intermediate buffering
+    etc...
 
 ## What's next ?
 
@@ -217,7 +267,7 @@ Note: The Wi-Fi credentials and API token in config.json are migrated to EEPROM 
 Security of stored secrets:
 
 - All sensitive values (API keys, wifi credentials, tokens, etc.) are stored in EEPROM using a device-unique obfuscation scheme
-- The obfuscation key is derived from the ESP8266's MAC address, chip ID, and a salt (configurable [here](./src/main.cpp#L39) in code) using SHA-256
+- The obfuscation key is derived from the ESP8266's MAC address, chip ID, and a salt (configurable [here](./src/main.cpp#L41) in code) using SHA-256
 - The JSON payload is XORed with this derived key before being written to EEPROM, and de-obfuscated on read
 - This makes it much harder to recover secrets from a raw flash dump on another device, or with only partial knowledge of the hardware
 
