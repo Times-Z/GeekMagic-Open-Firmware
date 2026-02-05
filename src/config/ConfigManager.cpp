@@ -64,12 +64,14 @@ auto ConfigManager::load() -> bool {
 
     String ssid = doc["wifi_ssid"] | "";
     String password = doc["wifi_password"] | "";
+    String api_token = doc["api_token"] | "";
     String ntp_server_cfg = doc["ntp_server"] | "";
 
     this->lcd_rotation = doc["lcd_rotation"] | lcd_rotation;
 
     String nvs_ssid = secure.get("wifi_ssid", "");
     String nvs_password = secure.get("wifi_password", "");
+    String nvs_api_token = secure.get("api_token", "");
 
     if ((ssid.length() != 0 && nvs_ssid.length() == 0) || (password.length() != 0 && nvs_password.length() == 0)) {
         secure.put("wifi_ssid", ssid.c_str());
@@ -91,6 +93,18 @@ auto ConfigManager::load() -> bool {
         this->password = secure.get("wifi_password").c_str();
     }
 
+    if (api_token.length() != 0 && nvs_api_token.length() == 0) {
+        secure.put("api_token", api_token.c_str());
+        this->api_token = secure.get("api_token").c_str();
+
+        // Ensure we delete the api token from the json config after migrating
+        ConfigManager::save();
+
+        Logger::info("API token migrated to SecureStorage", "ConfigManager");
+    } else {
+        this->api_token = secure.get("api_token").c_str();
+    }
+
     return true;
 }
 
@@ -107,6 +121,13 @@ auto ConfigManager::getSSID() const -> const char* { return ssid.c_str(); }
  * @return The password as a c style string
  */
 auto ConfigManager::getPassword() const -> const char* { return password.c_str(); }
+
+/**
+ * @brief Retrieves the current API token
+ *
+ * @return The API token as a c style string
+ */
+auto ConfigManager::getApiToken() const -> const char* { return api_token.c_str(); }
 
 /**
  * @brief Retrieves the LCD rotation setting
@@ -128,6 +149,18 @@ auto ConfigManager::setWiFi(const char* newSsid, const char* newPassword) -> voi
     }
     if (newPassword != nullptr) {
         password = newPassword;
+    }
+}
+/**
+ * @brief Set WiFi credentials in memory
+ * @param newSsid The SSID
+ * @param newPassword The password
+ *
+ * @return void
+ */
+auto ConfigManager::setApiToken(const char* newApiToken) -> void {
+    if (newApiToken != nullptr) {
+        api_token = newApiToken;
     }
 }
 
@@ -172,24 +205,6 @@ auto ConfigManager::save() -> bool {
 
     file.close();
     Logger::info("Configuration saved", "ConfigManager");
-
-    return true;
-}
-
-/**
- * @brief Migrate WiFi credentials to SecureStorage
- *
- * @param ssid The SSID to store
- * @param password The password to store
- * @return true on success false on failure
- */
-auto ConfigManager::migrateWiFiToSecureStorage(String ssid, String password) -> bool {
-    secure.put("wifi_ssid", ssid.c_str());
-    secure.put("wifi_password", password.c_str());
-
-    ConfigManager::save();
-
-    Logger::info("WiFi credentials migrated to SecureStorage", "ConfigManager");
 
     return true;
 }

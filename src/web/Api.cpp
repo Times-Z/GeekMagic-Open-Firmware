@@ -53,6 +53,7 @@ void handleDeleteGif(Webserver* webserver);
 
 static constexpr int WIFI_CONNECT_TIMEOUT_MS = 15000;
 static constexpr size_t NTP_CONFIG_DOC_SIZE = 512;
+static constexpr int BEARER_LEN = 7;
 
 /**
  * @brief Register API endpoints for the webserver
@@ -63,69 +64,84 @@ static constexpr size_t NTP_CONFIG_DOC_SIZE = 512;
 void registerApiEndpoints(Webserver* webserver) {
     Logger::info("Registering API endpoints", "API");
 
-    // @openapi {get} /wifi/scan version=v1 summary="Scan available WiFi networks" responses=200:application/json
+    // @openapi {get} /wifi/scan version=v1 group=WiFi summary="Scan available WiFi networks"
+    // responses=200:application/json
     webserver->raw().on("/api/v1/wifi/scan", HTTP_GET, [webserver]() { handleWifiScan(webserver); });
 
-    // @openapi {post} /wifi/connect version=v1 summary="Connect to a WiFi network" requestBody=application/json
-    // responses=200:application/json
+    // @openapi {post} /wifi/connect version=v1 group=WiFi summary="Connect to a WiFi network"
+    // requestBody=application/json requestBodySchema=ssid:string,password:string
+    // example={"ssid":"MyNetwork","password":"password123"} responses=200:application/json,400:application/json
     webserver->raw().on("/api/v1/wifi/connect", HTTP_POST, [webserver]() { handleWifiConnect(webserver); });
 
-    // @openapi {get} /wifi/status version=v1 summary="Get WiFi connection status" responses=200:application/json
+    // @openapi {get} /wifi/status version=v1 group=WiFi summary="Get WiFi connection status"
+    // responses=200:application/json
     webserver->raw().on("/api/v1/wifi/status", HTTP_GET, [webserver]() { handleWifiStatus(webserver); });
 
-    // @openapi {post} /ntp/sync version=v1 summary="Trigger NTP sync" responses=200:application/json
+    // @openapi {post} /ntp/sync version=v1 group=NTP summary="Trigger NTP sync" responses=200:application/json
     webserver->raw().on("/api/v1/ntp/sync", HTTP_POST, [webserver]() { handleNtpSync(webserver); });
 
-    // @openapi {get} /ntp/status version=v1 summary="Get NTP status" responses=200:application/json
+    // @openapi {get} /ntp/status version=v1 group=NTP summary="Get NTP status" responses=200:application/json
     webserver->raw().on("/api/v1/ntp/status", HTTP_GET, [webserver]() { handleNtpStatus(webserver); });
 
-    // @openapi {get} /ntp/config version=v1 summary="Get NTP configuration" responses=200:application/json
+    // @openapi {get} /ntp/config version=v1 group=NTP summary="Get NTP configuration" responses=200:application/json
     webserver->raw().on("/api/v1/ntp/config", HTTP_GET, [webserver]() { handleNtpConfigGet(webserver); });
 
-    // @openapi {post} /ntp/config version=v1 summary="Set NTP configuration" requestBody=application/json
-    // responses=200:application/json
+    // @openapi {post} /ntp/config version=v1 group=NTP summary="Set NTP configuration" requestBody=application/json
+    // requestBodySchema=ntp_server:string example={"ntp_server":"pool.ntp.org"}
+    // responses=200:application/json,400:application/json
     webserver->raw().on("/api/v1/ntp/config", HTTP_POST, [webserver]() { handleNtpConfigSet(webserver); });
 
-    // @openapi {post} /reboot version=v1 summary="Reboot the device" responses=200:application/json
+    // @openapi {post} /reboot version=v1 group=System summary="Reboot the device" responses=200:application/json
     webserver->raw().on("/api/v1/reboot", HTTP_POST, [webserver]() { handleReboot(webserver); });
 
-    // @openapi {post} /ota/fw version=v1 summary="Upload firmware (OTA)" requestBody=multipart/form-data
+    // @openapi {post} /ota/fw version=v1 group=OTA summary="Upload firmware (OTA)" requestBody=multipart/form-data
     // responses=200:application/json
     webserver->raw().on(
         "/api/v1/ota/fw", HTTP_POST, [webserver]() { handleOtaFinished(webserver); },
         [webserver]() { handleOtaUpload(webserver, U_FLASH); });
 
-    // @openapi {post} /ota/fs version=v1 summary="Upload filesystem (OTA)" requestBody=multipart/form-data
+    // @openapi {post} /ota/fs version=v1 group=OTA summary="Upload filesystem (OTA)" requestBody=multipart/form-data
     // responses=200:application/json
     webserver->raw().on(
         "/api/v1/ota/fs", HTTP_POST, [webserver]() { handleOtaFinished(webserver); },
         [webserver]() { handleOtaUpload(webserver, U_FS); });
 
-    // @openapi {get} /ota/status version=v1 summary="Get OTA status" responses=200:application/json
+    // @openapi {get} /ota/status version=v1 group=OTA summary="Get OTA status" responses=200:application/json
     webserver->raw().on("/api/v1/ota/status", HTTP_GET, [webserver]() { handleOtaStatus(webserver); });
 
-    // @openapi {post} /ota/cancel version=v1 summary="Cancel OTA" responses=200:application/json
+    // @openapi {post} /ota/cancel version=v1 group=OTA summary="Cancel OTA" responses=200:application/json
     webserver->raw().on("/api/v1/ota/cancel", HTTP_POST, [webserver]() { handleOtaCancel(webserver); });
 
-    // @openapi {post} /gif version=v1 summary="Upload a GIF" requestBody=multipart/form-data
+    // @openapi {post} /gif version=v1 group=GIF summary="Upload a GIF" requestBody=multipart/form-data
     // responses=200:application/json
     webserver->raw().on(
         "/api/v1/gif", HTTP_POST, [webserver]() { handleGifUpload(webserver); },
         [webserver]() { handleGifUpload(webserver); });
 
-    // @openapi {post} /gif/play version=v1 summary="Play a GIF by name" requestBody=application/json
-    // responses=200:application/json
+    // @openapi {post} /gif/play version=v1 group=GIF summary="Play a GIF by name" requestBody=application/json
+    // requestBodySchema=name:string example={"name":"animation.gif"}
+    // responses=200:application/json,400:application/json,404:application/json
     webserver->raw().on("/api/v1/gif/play", HTTP_POST, [webserver]() { handlePlayGif(webserver); });
 
-    // @openapi {post} /gif/stop version=v1 summary="Stop GIF playback" responses=200:application/json
+    // @openapi {post} /gif/stop version=v1 group=GIF summary="Stop GIF playback" responses=200:application/json
     webserver->raw().on("/api/v1/gif/stop", HTTP_POST, [webserver]() { handleStopGif(webserver); });
 
-    // @openapi {delete} /gif version=v1 summary="Delete a GIF by name" requestBody=application/json
-    // responses=200:application/json
+    // @openapi {delete} /gif version=v1 group=GIF summary="Delete a GIF by name" requestBody=application/json
+    // requestBodySchema=name:string example={"name":"animation.gif"}
+    // responses=200:application/json,400:application/json,404:application/json
     webserver->raw().on("/api/v1/gif", HTTP_DELETE, [webserver]() { handleDeleteGif(webserver); });
 
-    // @openapi {get} /gif version=v1 summary="List GIFs" responses=200:application/json
+    // @openapi {get} /gif version=v1 group=GIF summary="List GIFs" responses=200:application/json
     webserver->raw().on("/api/v1/gif", HTTP_GET, [webserver]() { handleListGifs(webserver); });
+
+    // @openapi {get} /token/check version=v1 group=Authentication summary="Check bearer token validity"
+    // requiresAuth=true responses=200:application/json,401:application/json
+    webserver->raw().on("/api/v1/token/check", HTTP_GET, [webserver]() { handleTokenCheck(webserver); });
+
+    // @openapi {post} /token/save version=v1 group=Authentication summary="Save a new bearer token" requiresAuth=true
+    // requestBody=application/json requestBodySchema=token:string example={"token":"your_secure_token_value"}
+    // responses=200:application/json,401:application/json,400:application/json
+    webserver->raw().on("/api/v1/token/save", HTTP_POST, [webserver]() { handleTokenSave(webserver); });
 
     webserver->raw().onNotFound([webserver]() {
         if (webserver->raw().method() == HTTP_OPTIONS) {
@@ -146,6 +162,158 @@ void setCorsHeaders(Webserver* webserver) {
     webserver->raw().sendHeader("Access-Control-Allow-Methods", "GET, POST, DELETE, OPTIONS");
     webserver->raw().sendHeader("Access-Control-Allow-Headers", "Content-Type, Authorization");
     webserver->raw().sendHeader("Access-Control-Max-Age", "3600");
+}
+
+/**
+ * @brief Validate bearer token from Authorization header
+ * @param webserver Pointer to the Webserver instance
+ *
+ * @return true if token is valid false otherwise
+ */
+static auto validateBearerToken(Webserver* webserver) -> bool {
+    if (!webserver->raw().hasHeader("Authorization")) {
+        return false;
+    }
+
+    String authHeader = webserver->raw().header("Authorization");
+
+    if (!authHeader.startsWith("Bearer ")) {
+        return false;
+    }
+
+    String providedToken = authHeader.substring(BEARER_LEN);
+    String storedToken = configManager.getApiToken();
+
+    if (storedToken.length() == 0) {
+        return false;
+    }
+
+    return providedToken.equals(storedToken);
+}
+
+/**
+ * @brief Check if bearer token is valid
+ * @param webserver Pointer to the Webserver instance
+ *
+ * @return void
+ */
+void handleTokenCheck(Webserver* webserver) {
+    if (validateBearerToken(webserver)) {
+        JsonDocument doc;
+        doc["status"] = "ok";
+        doc["message"] = "Token is valid";
+
+        String json;
+        serializeJson(doc, json);
+
+        setCorsHeaders(webserver);
+        webserver->raw().send(HTTP_CODE_OK, "application/json", json);
+    } else {
+        JsonDocument doc;
+        doc["status"] = "error";
+        doc["message"] = "Invalid or missing token";
+
+        String json;
+        serializeJson(doc, json);
+
+        setCorsHeaders(webserver);
+        webserver->raw().send(HTTP_CODE_UNAUTHORIZED, "application/json", json);
+
+        Logger::warn(
+            ("Unauthorized token check attempt from " + webserver->raw().client().remoteIP().toString()).c_str(),
+            "API");
+    }
+}
+
+/**
+ * @brief Save a new bearer token
+ * @param webserver Pointer to the Webserver instance
+ *
+ * @return void
+ */
+void handleTokenSave(Webserver* webserver) {
+    if (!validateBearerToken(webserver)) {
+        JsonDocument doc;
+        doc["status"] = "error";
+        doc["message"] = "Invalid or missing token";
+
+        String json;
+        serializeJson(doc, json);
+
+        setCorsHeaders(webserver);
+        webserver->raw().send(HTTP_CODE_UNAUTHORIZED, "application/json", json);
+
+        Logger::warn("Unauthorized attempt to save API token", "API");
+
+        return;
+    }
+
+    if (!webserver->raw().hasArg("plain") || webserver->raw().arg("plain").length() == 0) {
+        JsonDocument doc;
+        doc["status"] = "error";
+        doc["message"] = "Missing JSON body";
+
+        String json;
+        serializeJson(doc, json);
+
+        setCorsHeaders(webserver);
+        webserver->raw().send(HTTP_CODE_BAD_REQUEST, "application/json", json);
+
+        return;
+    }
+
+    String body = webserver->raw().arg("plain");
+    JsonDocument ddoc;
+    DeserializationError err = deserializeJson(ddoc, body);
+
+    if (err) {
+        JsonDocument doc;
+        doc["status"] = "error";
+        doc["message"] = "Invalid JSON";
+
+        String json;
+        serializeJson(doc, json);
+
+        setCorsHeaders(webserver);
+        webserver->raw().send(HTTP_CODE_BAD_REQUEST, "application/json", json);
+
+        Logger::warn("Attempt to save API token with invalid JSON", "API");
+
+        return;
+    }
+
+    const char* newToken = ddoc["token"] | "";
+
+    if (strlen(newToken) == 0) {
+        JsonDocument doc;
+        doc["status"] = "error";
+        doc["message"] = "token field is required";
+
+        String json;
+        serializeJson(doc, json);
+
+        setCorsHeaders(webserver);
+
+        webserver->raw().send(HTTP_CODE_BAD_REQUEST, "application/json", json);
+
+        Logger::warn("Attempt to save empty API token", "API");
+        return;
+    }
+
+    configManager.setApiToken(newToken);
+    configManager.save();
+
+    JsonDocument doc;
+    doc["status"] = "ok";
+    doc["message"] = "Token saved successfully";
+
+    String json;
+    serializeJson(doc, json);
+
+    setCorsHeaders(webserver);
+    webserver->raw().send(HTTP_CODE_OK, "application/json", json);
+
+    Logger::info("API token updated", "API");
 }
 
 /**

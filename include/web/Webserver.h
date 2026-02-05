@@ -42,6 +42,11 @@ static int constexpr HTTP_CODE_BAD_REQUEST = 400;
 static int constexpr HTTP_CODE_NOT_FOUND = 404;
 
 /**
+ * @brief HTTP status code 401
+ */
+static int constexpr HTTP_CODE_UNAUTHORIZED = 401;
+
+/**
  * @brief HTTP status code 500
  */
 static int constexpr HTTP_CODE_INTERNAL_ERROR = 500;

@@ -47,14 +47,16 @@ class ConfigManager {
     void setWiFi(const char* newSsid, const char* newPassword);
     const char* getSSID() const;
     const char* getPassword() const;
+    const char* getApiToken() const;
+    void setApiToken(const char* newApiToken);
     uint8_t getLCDRotation() const;
     uint32_t getLCDSpiHz() const;
-    bool migrateWiFiToSecureStorage(String ssid, String password);
 
    public:
     uint8_t getLCDRotationSafe() const { return lcd_rotation; }
     std::string ssid;
     std::string password;
+    std::string api_token;
     std::string filename;
     SecureStorage secure;
     uint8_t lcd_rotation = 4;

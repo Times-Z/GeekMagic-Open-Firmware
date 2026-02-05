@@ -44,4 +44,7 @@ void handleNtpStatus(Webserver* webserver);
 void handleNtpConfigGet(Webserver* webserver);
 void handleNtpConfigSet(Webserver* webserver);
 
+void handleTokenCheck(Webserver* webserver);
+void handleTokenSave(Webserver* webserver);
+
 #endif  // API_H

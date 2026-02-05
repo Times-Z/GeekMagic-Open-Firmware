@@ -22,7 +22,7 @@ paths:
               schema:
                 type: "object"
       tags:
-        - "v1"
+        - "WiFi"
   /api/v1/wifi/connect:
     post:
       summary: "Connect to a WiFi network"
@@ -34,13 +34,30 @@ paths:
             application/json:
               schema:
                 type: "object"
+        400:
+          description: ""
+          content:
+            application/json:
+              schema:
+                type: "object"
       tags:
-        - "v1"
+        - "WiFi"
       requestBody:
         content:
           application/json:
             schema:
               type: "object"
+              properties:
+                ssid:
+                  type: "string"
+                password:
+                  type: "string"
+              required:
+                - "ssid"
+                - "password"
+              example:
+                ssid: "MyNetwork"
+                password: "password123"
         required: true
   /api/v1/wifi/status:
     get:
@@ -54,7 +71,7 @@ paths:
               schema:
                 type: "object"
       tags:
-        - "v1"
+        - "WiFi"
   /api/v1/ntp/sync:
     post:
       summary: "Trigger NTP sync"
@@ -67,7 +84,7 @@ paths:
               schema:
                 type: "object"
       tags:
-        - "v1"
+        - "NTP"
   /api/v1/ntp/status:
     get:
       summary: "Get NTP status"
@@ -80,7 +97,7 @@ paths:
               schema:
                 type: "object"
       tags:
-        - "v1"
+        - "NTP"
   /api/v1/ntp/config:
     get:
       summary: "Get NTP configuration"
@@ -93,7 +110,7 @@ paths:
               schema:
                 type: "object"
       tags:
-        - "v1"
+        - "NTP"
     post:
       summary: "Set NTP configuration"
       operationId: "op_v1_post_api_v1_ntp_config"
@@ -104,13 +121,26 @@ paths:
             application/json:
               schema:
                 type: "object"
+        400:
+          description: ""
+          content:
+            application/json:
+              schema:
+                type: "object"
       tags:
-        - "v1"
+        - "NTP"
       requestBody:
         content:
           application/json:
             schema:
               type: "object"
+              properties:
+                ntp_server:
+                  type: "string"
+              required:
+                - "ntp_server"
+              example:
+                ntp_server: "pool.ntp.org"
         required: true
   /api/v1/reboot:
     post:
@@ -124,7 +154,7 @@ paths:
               schema:
                 type: "object"
       tags:
-        - "v1"
+        - "System"
   /api/v1/ota/fw:
     post:
       summary: "Upload firmware (OTA)"
@@ -137,7 +167,7 @@ paths:
               schema:
                 type: "object"
       tags:
-        - "v1"
+        - "OTA"
       requestBody:
         content:
           multipart/form-data:
@@ -156,7 +186,7 @@ paths:
               schema:
                 type: "object"
       tags:
-        - "v1"
+        - "OTA"
       requestBody:
         content:
           multipart/form-data:
@@ -175,7 +205,7 @@ paths:
               schema:
                 type: "object"
       tags:
-        - "v1"
+        - "OTA"
   /api/v1/ota/cancel:
     post:
       summary: "Cancel OTA"
@@ -188,7 +218,7 @@ paths:
               schema:
                 type: "object"
       tags:
-        - "v1"
+        - "OTA"
   /api/v1/gif:
     post:
       summary: "Upload a GIF"
@@ -201,7 +231,7 @@ paths:
               schema:
                 type: "object"
       tags:
-        - "v1"
+        - "GIF"
       requestBody:
         content:
           multipart/form-data:
@@ -218,13 +248,32 @@ paths:
             application/json:
               schema:
                 type: "object"
+        400:
+          description: ""
+          content:
+            application/json:
+              schema:
+                type: "object"
+        404:
+          description: ""
+          content:
+            application/json:
+              schema:
+                type: "object"
       tags:
-        - "v1"
+        - "GIF"
       requestBody:
         content:
           application/json:
             schema:
               type: "object"
+              properties:
+                name:
+                  type: "string"
+              required:
+                - "name"
+              example:
+                name: "animation.gif"
         required: true
     get:
       summary: "List GIFs"
@@ -237,7 +286,7 @@ paths:
               schema:
                 type: "object"
       tags:
-        - "v1"
+        - "GIF"
   /api/v1/gif/play:
     post:
       summary: "Play a GIF by name"
@@ -249,13 +298,32 @@ paths:
             application/json:
               schema:
                 type: "object"
+        400:
+          description: ""
+          content:
+            application/json:
+              schema:
+                type: "object"
+        404:
+          description: ""
+          content:
+            application/json:
+              schema:
+                type: "object"
       tags:
-        - "v1"
+        - "GIF"
       requestBody:
         content:
           application/json:
             schema:
               type: "object"
+              properties:
+                name:
+                  type: "string"
+              required:
+                - "name"
+              example:
+                name: "animation.gif"
         required: true
   /api/v1/gif/stop:
     post:
@@ -269,8 +337,95 @@ paths:
               schema:
                 type: "object"
       tags:
-        - "v1"
+        - "GIF"
+  /api/v1/token/check:
+    get:
+      summary: "Check bearer token validity"
+      operationId: "op_v1_get_api_v1_token_check"
+      responses:
+        200:
+          description: ""
+          content:
+            application/json:
+              schema:
+                type: "object"
+        401:
+          description: ""
+          content:
+            application/json:
+              schema:
+                type: "object"
+      tags:
+        - "Authentication"
+      security:
+        - 
+          bearerAuth: []
+      description: "**Requires Authentication** - Check bearer token validity. This endpoint requires a valid bearer token in the Authorization header."
+  /api/v1/token/save:
+    post:
+      summary: "Save a new bearer token"
+      operationId: "op_v1_post_api_v1_token_save"
+      responses:
+        200:
+          description: ""
+          content:
+            application/json:
+              schema:
+                type: "object"
+        401:
+          description: ""
+          content:
+            application/json:
+              schema:
+                type: "object"
+        400:
+          description: ""
+          content:
+            application/json:
+              schema:
+                type: "object"
+      tags:
+        - "Authentication"
+      security:
+        - 
+          bearerAuth: []
+      description: "**Requires Authentication** - Save a new bearer token. This endpoint requires a valid bearer token in the Authorization header."
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: "object"
+              properties:
+                token:
+                  type: "string"
+              required:
+                - "token"
+              example:
+                token: "your_secure_token_value"
+        required: true
+components:
+  securitySchemes:
+    bearerAuth:
+      type: "http"
+      scheme: "bearer"
+      bearerFormat: "Token"
+      description: "Bearer token authentication. Include the token in the Authorization header as: Bearer <token>"
 tags:
   - 
-    name: "v1"
-    description: "API v1 endpoints"
+    name: "Authentication"
+    description: "API Authentication endpoints"
+  - 
+    name: "GIF"
+    description: "API GIF endpoints"
+  - 
+    name: "NTP"
+    description: "API NTP endpoints"
+  - 
+    name: "OTA"
+    description: "API OTA endpoints"
+  - 
+    name: "System"
+    description: "API System endpoints"
+  - 
+    name: "WiFi"
+    description: "API WiFi endpoints"
