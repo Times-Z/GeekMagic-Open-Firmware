@@ -87,6 +87,74 @@
         </div>
 
         <p x-text="statusMsg"></p>
+
+        <section x-show="hasStoredToken">
+          <h3>Change Token</h3>
+
+          <p>
+            Update the token saved on the device. The current token is used to
+            authorize this change.
+          </p>
+
+          <label for="new-token">New token</label>
+          <div class="password-row">
+            <input
+              id="new-token"
+              x-model="newToken"
+              name="new-token"
+              :type="showNewToken ? 'text' : 'password'"
+              autocomplete="off"
+              placeholder="Paste new token here"
+            />
+            <button
+              type="button"
+              @click="showNewToken = !showNewToken"
+              aria-label="Toggle new token visibility"
+              class="eye-btn"
+            >
+              <svg
+                x-show="!showNewToken"
+                width="18"
+                height="18"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="2"
+                stroke-linecap="round"
+                stroke-linejoin="round"
+                aria-hidden="true"
+              >
+                <path
+                  d="M2.5 12c1.8-4 5.5-7 9.5-7 4 0 7.7 3 9.5 7-1.8 4-5.5 7-9.5 7-4 0-7.7-3-9.5-7z"
+                />
+                <path d="M3 3l18 18" />
+              </svg>
+              <svg
+                x-show="showNewToken"
+                width="18"
+                height="18"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="2"
+                stroke-linecap="round"
+                stroke-linejoin="round"
+                aria-hidden="true"
+              >
+                <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8S1 12 1 12z"></path>
+                <circle cx="12" cy="12" r="3"></circle>
+              </svg>
+            </button>
+          </div>
+
+          <div class="action-row">
+            <button type="button" @click="changeToken()" :disabled="loading">
+              Update Token
+            </button>
+          </div>
+
+          <p x-text="changeStatusMsg"></p>
+        </section>
       </section>
 
       <footer id="footer-placeholder"></footer>

@@ -270,6 +270,28 @@ def token_check(h: APIHandler):
         return h.json_response({"error": "invalid token"}, 401)
     h.json_response({"status": "ok"})
 
+
+@router.route("POST", "/api/v1/token/save")
+def token_save(h: APIHandler):
+    auth = h.headers.get("Authorization", "")
+    expected = h.state.get("auth.token", "")
+    if not auth.startswith("Bearer "):
+        return h.json_response({"error": "missing bearer token"}, 401)
+    token = auth.replace("Bearer ", "", 1).strip()
+    if not expected or token != expected:
+        return h.json_response({"error": "invalid token"}, 401)
+
+    data = h.read_json()
+    if data is None:
+        return h.json_response({"error": "invalid json"}, 400)
+
+    new_token = data.get("token", "")
+    if not new_token:
+        return h.json_response({"error": "token field is required"}, 400)
+
+    h.state.set("auth.token", new_token)
+    h.json_response({"status": "ok"})
+
 def make_handler(state: DeviceState, router: Router):
     class BoundHandler(APIHandler):
         pass
