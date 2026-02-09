@@ -192,37 +192,52 @@ static auto validateBearerToken(Webserver* webserver) -> bool {
 }
 
 /**
+ * @brief Enforce bearer token check and send 401 response if invalid
+ * @param webserver Pointer to the Webserver instance
+ *
+ * @return true if token is valid false otherwise
+ */
+static auto requireBearerToken(Webserver* webserver) -> bool {
+    if (validateBearerToken(webserver)) {
+        return true;
+    }
+
+    JsonDocument doc;
+    doc["status"] = "error";
+    doc["message"] = "Invalid or missing token";
+
+    String json;
+    serializeJson(doc, json);
+
+    setCorsHeaders(webserver);
+    webserver->raw().send(HTTP_CODE_UNAUTHORIZED, "application/json", json);
+
+    Logger::warn(
+        ("Unauthorized request from " + webserver->raw().client().remoteIP().toString()).c_str(), "API");
+
+    return false;
+}
+
+/**
  * @brief Check if bearer token is valid
  * @param webserver Pointer to the Webserver instance
  *
  * @return void
  */
 void handleTokenCheck(Webserver* webserver) {
-    if (validateBearerToken(webserver)) {
-        JsonDocument doc;
-        doc["status"] = "ok";
-        doc["message"] = "Token is valid";
-
-        String json;
-        serializeJson(doc, json);
-
-        setCorsHeaders(webserver);
-        webserver->raw().send(HTTP_CODE_OK, "application/json", json);
-    } else {
-        JsonDocument doc;
-        doc["status"] = "error";
-        doc["message"] = "Invalid or missing token";
-
-        String json;
-        serializeJson(doc, json);
-
-        setCorsHeaders(webserver);
-        webserver->raw().send(HTTP_CODE_UNAUTHORIZED, "application/json", json);
-
-        Logger::warn(
-            ("Unauthorized token check attempt from " + webserver->raw().client().remoteIP().toString()).c_str(),
-            "API");
+    if (!requireBearerToken(webserver)) {
+        return;
     }
+
+    JsonDocument doc;
+    doc["status"] = "ok";
+    doc["message"] = "Token is valid";
+
+    String json;
+    serializeJson(doc, json);
+
+    setCorsHeaders(webserver);
+    webserver->raw().send(HTTP_CODE_OK, "application/json", json);
 }
 
 /**
@@ -232,19 +247,7 @@ void handleTokenCheck(Webserver* webserver) {
  * @return void
  */
 void handleTokenSave(Webserver* webserver) {
-    if (!validateBearerToken(webserver)) {
-        JsonDocument doc;
-        doc["status"] = "error";
-        doc["message"] = "Invalid or missing token";
-
-        String json;
-        serializeJson(doc, json);
-
-        setCorsHeaders(webserver);
-        webserver->raw().send(HTTP_CODE_UNAUTHORIZED, "application/json", json);
-
-        Logger::warn("Unauthorized attempt to save API token", "API");
-
+    if (!requireBearerToken(webserver)) {
         return;
     }
 
