@@ -1,0 +1,95 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>API Token</title>
+    <link rel="stylesheet" href="./css/pico.min.css" />
+    <link rel="stylesheet" href="./css/style.css" />
+    <script src="./js/alpinejs.min.js" defer></script>
+    <script src="./js/utils.js"></script>
+    <script src="./js/themeSwitcher.js"></script>
+    <script src="./js/tokenHandler.js"></script>
+    <script src="./js/main.js"></script>
+  </head>
+  <body>
+    <main class="container">
+      <header id="header-placeholder"></header>
+
+      <a href="./index.html" class="wifi-back-link">← Back to Home</a>
+
+      <section x-data="tokenHandler()" x-init="init()">
+        <h2>Bearer Token</h2>
+
+        <p>
+          This token is stored locally in your browser (localStorage key:
+          <strong>Authorization</strong>).
+        </p>
+
+        <label for="bearer-token">Token</label>
+        <div class="password-row">
+          <input
+            id="bearer-token"
+            x-model="token"
+            name="bearer-token"
+            :type="showToken ? 'text' : 'password'"
+            autocomplete="off"
+            placeholder="Paste token here"
+          />
+          <button
+            type="button"
+            @click="showToken = !showToken"
+            aria-label="Toggle token visibility"
+            class="eye-btn"
+          >
+            <svg
+              x-show="!showToken"
+              width="18"
+              height="18"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              stroke-width="2"
+              stroke-linecap="round"
+              stroke-linejoin="round"
+              aria-hidden="true"
+            >
+              <path
+                d="M2.5 12c1.8-4 5.5-7 9.5-7 4 0 7.7 3 9.5 7-1.8 4-5.5 7-9.5 7-4 0-7.7-3-9.5-7z"
+              />
+              <path d="M3 3l18 18" />
+            </svg>
+            <svg
+              x-show="showToken"
+              width="18"
+              height="18"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              stroke-width="2"
+              stroke-linecap="round"
+              stroke-linejoin="round"
+              aria-hidden="true"
+            >
+              <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8S1 12 1 12z"></path>
+              <circle cx="12" cy="12" r="3"></circle>
+            </svg>
+          </button>
+        </div>
+
+        <div class="action-row">
+          <button type="button" @click="saveToken()" :disabled="loading">
+            Save
+          </button>
+          <button type="button" @click="clearToken()" :disabled="loading">
+            Clear
+          </button>
+        </div>
+
+        <p x-text="statusMsg"></p>
+      </section>
+
+      <footer id="footer-placeholder"></footer>
+    </main>
+  </body>
+</html>

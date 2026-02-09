@@ -258,6 +258,18 @@ def gif_stop(h: APIHandler):
 def reboot(h: APIHandler):
     h.json_response({"status": "rebooting"})
 
+
+@router.route("GET", "/api/v1/token/check")
+def token_check(h: APIHandler):
+    auth = h.headers.get("Authorization", "")
+    expected = h.state.get("auth.token", "")
+    if not auth.startswith("Bearer "):
+        return h.json_response({"error": "missing bearer token"}, 401)
+    token = auth.replace("Bearer ", "", 1).strip()
+    if not expected or token != expected:
+        return h.json_response({"error": "invalid token"}, 401)
+    h.json_response({"status": "ok"})
+
 def make_handler(state: DeviceState, router: Router):
     class BoundHandler(APIHandler):
         pass
@@ -318,6 +330,8 @@ if __name__ == "__main__":
             {"name": "[BIG SHOT].gif", "size": 500},
         ],
     })
+
+    state.set("auth.token", "test-token")
 
     parser = argparse.ArgumentParser(add_help=False)
     parser.add_argument('--host', '-h', default=HOST, help='Host to bind (default: %(default)s)')
