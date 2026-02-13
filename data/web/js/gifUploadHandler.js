@@ -2,7 +2,7 @@ function gifUploadHandler() {
   return {
     async playGifFullscreen(gifName) {
       try {
-        await fetch(`/api/v1/gif/play`, {
+        await apiFetch(`/api/v1/gif/play`, {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({ name: gifName }),
@@ -14,7 +14,7 @@ function gifUploadHandler() {
 
     async stopGif() {
       try {
-        const res = await fetch(`/api/v1/gif/stop`, { method: "POST" });
+        const res = await apiFetch(`/api/v1/gif/stop`, { method: "POST" });
         if (!res.ok) {
           const txt = await res.text().catch(() => "");
           alert("Failed to stop GIF: " + txt);
@@ -62,7 +62,7 @@ function gifUploadHandler() {
       formData.append("upload", file, file.name);
 
       try {
-        const response = await fetch("/api/v1/gif", {
+        const response = await apiFetch("/api/v1/gif", {
           method: "POST",
           body: formData,
         });
@@ -86,7 +86,7 @@ function gifUploadHandler() {
       this.gifListLoaded = false;
 
       try {
-        const response = await fetch("/api/v1/gif");
+        const response = await apiFetch("/api/v1/gif");
         const data = await response.json();
         this.gifs = data.files || [];
         this.usedBytes = data.usedBytes || 0;
@@ -104,7 +104,7 @@ function gifUploadHandler() {
       if (!confirm(`Delete ${gifName}? This cannot be undone.`)) return;
 
       try {
-        const res = await fetch("/api/v1/gif", {
+        const res = await apiFetch("/api/v1/gif", {
           method: "DELETE",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({ name: gifName }),

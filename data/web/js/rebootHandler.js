@@ -6,7 +6,7 @@ function rebootHandler() {
       this.loading = true;
       this.message = "Rebooting...";
       try {
-        const res = await fetch("/api/v1/reboot", { method: "POST" });
+        const res = await apiFetch("/api/v1/reboot", { method: "POST" });
         if (res.ok) {
           this.message = "Device is rebooting...";
         } else {

@@ -7,7 +7,7 @@ function ntpHandler() {
     ntpServer: "",
 
     fetchStatus() {
-      fetch("/api/v1/ntp/status")
+      apiFetch("/api/v1/ntp/status")
         .then((r) => r.json())
         .then((data) => {
           this.lastStatus = data.lastStatus || "";
@@ -22,7 +22,7 @@ function ntpHandler() {
 
     syncNow() {
       this.loading = true;
-      fetch("/api/v1/ntp/sync", { method: "POST" })
+      apiFetch("/api/v1/ntp/sync", { method: "POST" })
         .then((r) => r.json())
         .then((data) => {
           this.lastStatus = data.lastStatus || "";
@@ -39,7 +39,7 @@ function ntpHandler() {
     },
 
     fetchConfig() {
-      fetch("/api/v1/ntp/config")
+      apiFetch("/api/v1/ntp/config")
         .then((r) => r.json())
         .then((data) => {
           this.ntpServer = data.ntp_server || "";
@@ -51,7 +51,7 @@ function ntpHandler() {
 
     saveConfig() {
       const payload = { ntp_server: this.ntpServer };
-      fetch("/api/v1/ntp/config", {
+      apiFetch("/api/v1/ntp/config", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(payload),

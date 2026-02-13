@@ -83,6 +83,10 @@ function otaUploadHandler() {
       };
 
       this.xhr.open("POST", endpoint);
+      const token = localStorage.getItem("Authorization");
+      if (token) {
+        this.xhr.setRequestHeader("Authorization", `Bearer ${token}`);
+      }
       this.xhr.send(formData);
     },
 
@@ -96,7 +100,7 @@ function otaUploadHandler() {
       }
 
       try {
-        await fetch("/api/v1/ota/cancel", { method: "POST" });
+        await apiFetch("/api/v1/ota/cancel", { method: "POST" });
       } catch (e) {
         // ignore
       }

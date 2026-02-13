@@ -10,6 +10,24 @@ function humanFileSize(bytes) {
   return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + " " + sizes[i];
 }
 
+function apiFetch(url, options = {}) {
+  const token = localStorage.getItem("Authorization");
+
+  const fetchOptions = { ...options };
+
+  if (!fetchOptions.headers) {
+    fetchOptions.headers = {};
+  } else {
+    fetchOptions.headers = { ...fetchOptions.headers };
+  }
+
+  if (token) {
+    fetchOptions.headers["Authorization"] = `Bearer ${token}`;
+  }
+
+  return fetch(url, fetchOptions);
+}
+
 function includeHTML(id, url, callback) {
   fetch(url)
     .then((response) => response.text())

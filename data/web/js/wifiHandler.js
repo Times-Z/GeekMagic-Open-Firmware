@@ -12,7 +12,7 @@ function wifiHandler() {
       this.scanning = true;
       this.statusMsg = "";
       try {
-        const res = await fetch("/api/v1/wifi/scan");
+        const res = await apiFetch("/api/v1/wifi/scan");
         const nets = await res.json();
         // process: sort by rssi desc and enrich display fields
         this.networks = (nets || [])
@@ -70,7 +70,7 @@ function wifiHandler() {
       this.statusMsg = "Connecting...";
       this.connecting = true;
       try {
-        const res = await fetch("/api/v1/wifi/connect", {
+        const res = await apiFetch("/api/v1/wifi/connect", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({ ssid: this.ssid, password: this.password }),
@@ -96,7 +96,7 @@ function wifiHandler() {
 
     async init() {
       try {
-        const res = await fetch("/api/v1/wifi/status");
+        const res = await apiFetch("/api/v1/wifi/status");
         const j = await res.json();
         if (j.connected) {
           this.statusMsg = `Connected: ${j.ssid} ${j.ip}`;

@@ -64,74 +64,74 @@ static constexpr int BEARER_LEN = 7;
 void registerApiEndpoints(Webserver* webserver) {
     Logger::info("Registering API endpoints", "API");
 
-    // @openapi {get} /wifi/scan version=v1 group=WiFi summary="Scan available WiFi networks"
-    // responses=200:application/json
+    // @openapi {get} /wifi/scan version=v1 group=WiFi summary="Scan available WiFi networks" requiresAuth=true
+    // responses=200:application/json,401:application/json
     webserver->raw().on("/api/v1/wifi/scan", HTTP_GET, [webserver]() { handleWifiScan(webserver); });
 
-    // @openapi {post} /wifi/connect version=v1 group=WiFi summary="Connect to a WiFi network"
+    // @openapi {post} /wifi/connect version=v1 group=WiFi summary="Connect to a WiFi network" requiresAuth=true
     // requestBody=application/json requestBodySchema=ssid:string,password:string
-    // example={"ssid":"MyNetwork","password":"password123"} responses=200:application/json,400:application/json
+    // example={"ssid":"MyNetwork","password":"password123"} responses=200:application/json,400:application/json,401:application/json
     webserver->raw().on("/api/v1/wifi/connect", HTTP_POST, [webserver]() { handleWifiConnect(webserver); });
 
-    // @openapi {get} /wifi/status version=v1 group=WiFi summary="Get WiFi connection status"
-    // responses=200:application/json
+    // @openapi {get} /wifi/status version=v1 group=WiFi summary="Get WiFi connection status" requiresAuth=true
+    // responses=200:application/json,401:application/json
     webserver->raw().on("/api/v1/wifi/status", HTTP_GET, [webserver]() { handleWifiStatus(webserver); });
 
-    // @openapi {post} /ntp/sync version=v1 group=NTP summary="Trigger NTP sync" responses=200:application/json
+    // @openapi {post} /ntp/sync version=v1 group=NTP summary="Trigger NTP sync" requiresAuth=true responses=200:application/json,401:application/json
     webserver->raw().on("/api/v1/ntp/sync", HTTP_POST, [webserver]() { handleNtpSync(webserver); });
 
-    // @openapi {get} /ntp/status version=v1 group=NTP summary="Get NTP status" responses=200:application/json
+    // @openapi {get} /ntp/status version=v1 group=NTP summary="Get NTP status" requiresAuth=true responses=200:application/json,401:application/json
     webserver->raw().on("/api/v1/ntp/status", HTTP_GET, [webserver]() { handleNtpStatus(webserver); });
 
-    // @openapi {get} /ntp/config version=v1 group=NTP summary="Get NTP configuration" responses=200:application/json
+    // @openapi {get} /ntp/config version=v1 group=NTP summary="Get NTP configuration" requiresAuth=true responses=200:application/json,401:application/json
     webserver->raw().on("/api/v1/ntp/config", HTTP_GET, [webserver]() { handleNtpConfigGet(webserver); });
 
-    // @openapi {post} /ntp/config version=v1 group=NTP summary="Set NTP configuration" requestBody=application/json
+    // @openapi {post} /ntp/config version=v1 group=NTP summary="Set NTP configuration" requiresAuth=true requestBody=application/json
     // requestBodySchema=ntp_server:string example={"ntp_server":"pool.ntp.org"}
-    // responses=200:application/json,400:application/json
+    // responses=200:application/json,400:application/json,401:application/json
     webserver->raw().on("/api/v1/ntp/config", HTTP_POST, [webserver]() { handleNtpConfigSet(webserver); });
 
-    // @openapi {post} /reboot version=v1 group=System summary="Reboot the device" responses=200:application/json
+    // @openapi {post} /reboot version=v1 group=System summary="Reboot the device" requiresAuth=true responses=200:application/json,401:application/json
     webserver->raw().on("/api/v1/reboot", HTTP_POST, [webserver]() { handleReboot(webserver); });
 
-    // @openapi {post} /ota/fw version=v1 group=OTA summary="Upload firmware (OTA)" requestBody=multipart/form-data
-    // responses=200:application/json
+    // @openapi {post} /ota/fw version=v1 group=OTA summary="Upload firmware (OTA)" requiresAuth=true requestBody=multipart/form-data
+    // responses=200:application/json,401:application/json
     webserver->raw().on(
         "/api/v1/ota/fw", HTTP_POST, [webserver]() { handleOtaFinished(webserver); },
         [webserver]() { handleOtaUpload(webserver, U_FLASH); });
 
-    // @openapi {post} /ota/fs version=v1 group=OTA summary="Upload filesystem (OTA)" requestBody=multipart/form-data
-    // responses=200:application/json
+    // @openapi {post} /ota/fs version=v1 group=OTA summary="Upload filesystem (OTA)" requiresAuth=true requestBody=multipart/form-data
+    // responses=200:application/json,401:application/json
     webserver->raw().on(
         "/api/v1/ota/fs", HTTP_POST, [webserver]() { handleOtaFinished(webserver); },
         [webserver]() { handleOtaUpload(webserver, U_FS); });
 
-    // @openapi {get} /ota/status version=v1 group=OTA summary="Get OTA status" responses=200:application/json
+    // @openapi {get} /ota/status version=v1 group=OTA summary="Get OTA status" requiresAuth=true responses=200:application/json,401:application/json
     webserver->raw().on("/api/v1/ota/status", HTTP_GET, [webserver]() { handleOtaStatus(webserver); });
 
-    // @openapi {post} /ota/cancel version=v1 group=OTA summary="Cancel OTA" responses=200:application/json
+    // @openapi {post} /ota/cancel version=v1 group=OTA summary="Cancel OTA" requiresAuth=true responses=200:application/json,401:application/json
     webserver->raw().on("/api/v1/ota/cancel", HTTP_POST, [webserver]() { handleOtaCancel(webserver); });
 
-    // @openapi {post} /gif version=v1 group=GIF summary="Upload a GIF" requestBody=multipart/form-data
-    // responses=200:application/json
+    // @openapi {post} /gif version=v1 group=GIF summary="Upload a GIF" requiresAuth=true requestBody=multipart/form-data
+    // responses=200:application/json,401:application/json
     webserver->raw().on(
         "/api/v1/gif", HTTP_POST, [webserver]() { handleGifUpload(webserver); },
         [webserver]() { handleGifUpload(webserver); });
 
-    // @openapi {post} /gif/play version=v1 group=GIF summary="Play a GIF by name" requestBody=application/json
+    // @openapi {post} /gif/play version=v1 group=GIF summary="Play a GIF by name" requiresAuth=true requestBody=application/json
     // requestBodySchema=name:string example={"name":"animation.gif"}
-    // responses=200:application/json,400:application/json,404:application/json
+    // responses=200:application/json,400:application/json,401:application/json,404:application/json
     webserver->raw().on("/api/v1/gif/play", HTTP_POST, [webserver]() { handlePlayGif(webserver); });
 
-    // @openapi {post} /gif/stop version=v1 group=GIF summary="Stop GIF playback" responses=200:application/json
+    // @openapi {post} /gif/stop version=v1 group=GIF summary="Stop GIF playback" requiresAuth=true responses=200:application/json,401:application/json
     webserver->raw().on("/api/v1/gif/stop", HTTP_POST, [webserver]() { handleStopGif(webserver); });
 
-    // @openapi {delete} /gif version=v1 group=GIF summary="Delete a GIF by name" requestBody=application/json
+    // @openapi {delete} /gif version=v1 group=GIF summary="Delete a GIF by name" requiresAuth=true requestBody=application/json
     // requestBodySchema=name:string example={"name":"animation.gif"}
-    // responses=200:application/json,400:application/json,404:application/json
+    // responses=200:application/json,400:application/json,401:application/json,404:application/json
     webserver->raw().on("/api/v1/gif", HTTP_DELETE, [webserver]() { handleDeleteGif(webserver); });
 
-    // @openapi {get} /gif version=v1 group=GIF summary="List GIFs" responses=200:application/json
+    // @openapi {get} /gif version=v1 group=GIF summary="List GIFs" requiresAuth=true responses=200:application/json,401:application/json
     webserver->raw().on("/api/v1/gif", HTTP_GET, [webserver]() { handleListGifs(webserver); });
 
     // @openapi {get} /token/check version=v1 group=Authentication summary="Check bearer token validity"
@@ -323,6 +323,10 @@ void handleTokenSave(Webserver* webserver) {
  * @brief OTA status endpoint
  */
 void handleOtaStatus(Webserver* webserver) {
+    if (!requireBearerToken(webserver)) {
+        return;
+    }
+
     JsonDocument doc;
     doc["inProgress"] = otaInProgress;
     doc["bytesWritten"] = otaSize;
@@ -341,6 +345,10 @@ void handleOtaStatus(Webserver* webserver) {
  * @brief OTA cancel endpoint
  */
 void handleOtaCancel(Webserver* webserver) {
+    if (!requireBearerToken(webserver)) {
+        return;
+    }
+
     otaCancelRequested = true;
     otaStatus = "Cancel requested";
 
@@ -362,6 +370,10 @@ void handleOtaCancel(Webserver* webserver) {
  * @return void
  */
 void handleListGifs(Webserver* webserver) {
+    if (!requireBearerToken(webserver)) {
+        return;
+    }
+
     JsonDocument doc;
     JsonArray files = doc["files"].to<JsonArray>();
 
@@ -545,6 +557,22 @@ void handleGifUpload(Webserver* webserver) {
     static File gifFile;
     static bool uploadError = false;
 
+    if (upload.status == UPLOAD_FILE_START && !validateBearerToken(webserver)) {
+        uploadError = true;
+        JsonDocument doc;
+
+        doc["status"] = "error";
+        doc["message"] = "Invalid or missing token";
+
+        String json;
+        serializeJson(doc, json);
+        setCorsHeaders(webserver);
+
+        webserver->raw().send(HTTP_CODE_UNAUTHORIZED, "application/json", json);
+
+        return;
+    }
+
     String filename = upload.filename;
     filename.replace("\\", "/");
     filename = filename.substring(filename.lastIndexOf('/') + 1);
@@ -580,6 +608,10 @@ void handleGifUpload(Webserver* webserver) {
  * @return void
  */
 void handleReboot(Webserver* webserver) {
+    if (!requireBearerToken(webserver)) {
+        return;
+    }
+
     JsonDocument doc;
     int constexpr rebootDelayMs = 1000;
 
@@ -598,6 +630,10 @@ void handleReboot(Webserver* webserver) {
  * @brief Manual NTP sync trigger endpoint
  */
 void handleNtpSync(Webserver* webserver) {
+    if (!requireBearerToken(webserver)) {
+        return;
+    }
+
     JsonDocument doc;
 
     if (ntpClient == nullptr) {
@@ -629,6 +665,10 @@ void handleNtpSync(Webserver* webserver) {
  * @brief Return NTP status
  */
 void handleNtpStatus(Webserver* webserver) {
+    if (!requireBearerToken(webserver)) {
+        return;
+    }
+
     JsonDocument doc;
 
     if (ntpClient == nullptr) {
@@ -658,6 +698,10 @@ void handleNtpStatus(Webserver* webserver) {
  * @brief Get NTP configuration
  */
 void handleNtpConfigGet(Webserver* webserver) {
+    if (!requireBearerToken(webserver)) {
+        return;
+    }
+
     JsonDocument doc;
     doc["ntp_server"] = configManager.getNtpServer();
 
@@ -672,6 +716,10 @@ void handleNtpConfigGet(Webserver* webserver) {
  * @brief Set NTP configuration
  */
 void handleNtpConfigSet(Webserver* webserver) {
+    if (!requireBearerToken(webserver)) {
+        return;
+    }
+
     if (!webserver->raw().hasArg("plain") || webserver->raw().arg("plain").length() == 0) {
         JsonDocument doc;
         doc["status"] = "error";
@@ -762,6 +810,24 @@ void handleNtpConfigSet(Webserver* webserver) {
 void handleOtaUpload(Webserver* webserver, int mode) {
     HTTPUpload& upload = webserver->raw().upload();
 
+    if (upload.status == UPLOAD_FILE_START && !validateBearerToken(webserver)) {
+        otaError = true;
+        otaStatus = "Unauthorized";
+
+        JsonDocument doc;
+        doc["status"] = "error";
+        doc["message"] = "Invalid or missing token";
+
+        String json;
+
+        serializeJson(doc, json);
+        setCorsHeaders(webserver);
+
+        webserver->raw().send(HTTP_CODE_UNAUTHORIZED, "application/json", json);
+
+        return;
+    }
+
     switch (upload.status) {
         case UPLOAD_FILE_START:
             otaHandleStart(upload, mode);
@@ -787,6 +853,20 @@ void handleOtaUpload(Webserver* webserver, int mode) {
  * @return void
  */
 void handleOtaFinished(Webserver* webserver) {
+    if (!validateBearerToken(webserver)) {
+        JsonDocument doc;
+        doc["status"] = "error";
+        doc["message"] = "Invalid or missing token";
+
+        String json;
+        serializeJson(doc, json);
+        setCorsHeaders(webserver);
+
+        webserver->raw().send(HTTP_CODE_UNAUTHORIZED, "application/json", json);
+
+        return;
+    }
+
     JsonDocument doc;
     int constexpr rebootDelayMs = 5000;
 
@@ -820,6 +900,10 @@ void handleOtaFinished(Webserver* webserver) {
  * @return void
  */
 void handlePlayGif(Webserver* webserver) {
+    if (!requireBearerToken(webserver)) {
+        return;
+    }
+
     String body = webserver->raw().arg("plain");
     JsonDocument doc;
     DeserializationError err = deserializeJson(doc, body);
@@ -901,6 +985,10 @@ void handlePlayGif(Webserver* webserver) {
  * @brief Stop currently playing GIF
  */
 void handleStopGif(Webserver* webserver) {
+    if (!requireBearerToken(webserver)) {
+        return;
+    }
+
     JsonDocument resp;
 
     const bool stopped = DisplayManager::stopGif();
@@ -918,6 +1006,10 @@ void handleStopGif(Webserver* webserver) {
  * @brief Delete a GIF file from storage
  */
 void handleDeleteGif(Webserver* webserver) {
+    if (!requireBearerToken(webserver)) {
+        return;
+    }
+
     String body = webserver->raw().arg("plain");
     JsonDocument doc;
     DeserializationError err = deserializeJson(doc, body);
@@ -1005,6 +1097,10 @@ void handleDeleteGif(Webserver* webserver) {
  * @brief Handle WiFi scan
  */
 void handleWifiScan(Webserver* webserver) {
+    if (!requireBearerToken(webserver)) {
+        return;
+    }
+
     JsonDocument doc;
     JsonArray networks = doc["networks"].to<JsonArray>();
 
@@ -1023,6 +1119,10 @@ void handleWifiScan(Webserver* webserver) {
  * @brief Handle WiFi connect request
  */
 void handleWifiConnect(Webserver* webserver) {
+    if (!requireBearerToken(webserver)) {
+        return;
+    }
+
     String body = webserver->raw().arg("plain");
     JsonDocument doc;
     DeserializationError err = deserializeJson(doc, body);
@@ -1092,6 +1192,10 @@ void handleWifiConnect(Webserver* webserver) {
  * @brief WiFi status
  */
 void handleWifiStatus(Webserver* webserver) {
+    if (!requireBearerToken(webserver)) {
+        return;
+    }
+
     JsonDocument resp;
 
     bool connected = (wifiManager != nullptr) && WiFiManager::isConnected();

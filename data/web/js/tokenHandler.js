@@ -32,7 +32,7 @@ function tokenHandler() {
       this.statusMsg = "Checking token...";
 
       try {
-        const res = await fetch("/api/v1/token/check", {
+        const res = await fetch(\"/api/v1/token/check\", {
           method: "GET",
           headers: { Authorization: "Bearer " + trimmed },
         });

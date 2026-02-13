@@ -21,8 +21,18 @@ paths:
             application/json:
               schema:
                 type: "object"
+        401:
+          description: ""
+          content:
+            application/json:
+              schema:
+                type: "object"
       tags:
         - "WiFi"
+      security:
+        - 
+          bearerAuth: []
+      description: "**Requires Authentication** - Scan available WiFi networks. This endpoint requires a valid bearer token in the Authorization header."
   /api/v1/wifi/connect:
     post:
       summary: "Connect to a WiFi network"
@@ -40,8 +50,18 @@ paths:
             application/json:
               schema:
                 type: "object"
+        401:
+          description: ""
+          content:
+            application/json:
+              schema:
+                type: "object"
       tags:
         - "WiFi"
+      security:
+        - 
+          bearerAuth: []
+      description: "**Requires Authentication** - Connect to a WiFi network. This endpoint requires a valid bearer token in the Authorization header."
       requestBody:
         content:
           application/json:
@@ -70,8 +90,18 @@ paths:
             application/json:
               schema:
                 type: "object"
+        401:
+          description: ""
+          content:
+            application/json:
+              schema:
+                type: "object"
       tags:
         - "WiFi"
+      security:
+        - 
+          bearerAuth: []
+      description: "**Requires Authentication** - Get WiFi connection status. This endpoint requires a valid bearer token in the Authorization header."
   /api/v1/ntp/sync:
     post:
       summary: "Trigger NTP sync"
@@ -83,8 +113,18 @@ paths:
             application/json:
               schema:
                 type: "object"
+        401:
+          description: ""
+          content:
+            application/json:
+              schema:
+                type: "object"
       tags:
         - "NTP"
+      security:
+        - 
+          bearerAuth: []
+      description: "**Requires Authentication** - Trigger NTP sync. This endpoint requires a valid bearer token in the Authorization header."
   /api/v1/ntp/status:
     get:
       summary: "Get NTP status"
@@ -96,8 +136,18 @@ paths:
             application/json:
               schema:
                 type: "object"
+        401:
+          description: ""
+          content:
+            application/json:
+              schema:
+                type: "object"
       tags:
         - "NTP"
+      security:
+        - 
+          bearerAuth: []
+      description: "**Requires Authentication** - Get NTP status. This endpoint requires a valid bearer token in the Authorization header."
   /api/v1/ntp/config:
     get:
       summary: "Get NTP configuration"
@@ -109,8 +159,18 @@ paths:
             application/json:
               schema:
                 type: "object"
+        401:
+          description: ""
+          content:
+            application/json:
+              schema:
+                type: "object"
       tags:
         - "NTP"
+      security:
+        - 
+          bearerAuth: []
+      description: "**Requires Authentication** - Get NTP configuration. This endpoint requires a valid bearer token in the Authorization header."
     post:
       summary: "Set NTP configuration"
       operationId: "op_v1_post_api_v1_ntp_config"
@@ -127,8 +187,18 @@ paths:
             application/json:
               schema:
                 type: "object"
+        401:
+          description: ""
+          content:
+            application/json:
+              schema:
+                type: "object"
       tags:
         - "NTP"
+      security:
+        - 
+          bearerAuth: []
+      description: "**Requires Authentication** - Set NTP configuration. This endpoint requires a valid bearer token in the Authorization header."
       requestBody:
         content:
           application/json:
@@ -153,8 +223,18 @@ paths:
             application/json:
               schema:
                 type: "object"
+        401:
+          description: ""
+          content:
+            application/json:
+              schema:
+                type: "object"
       tags:
         - "System"
+      security:
+        - 
+          bearerAuth: []
+      description: "**Requires Authentication** - Reboot the device. This endpoint requires a valid bearer token in the Authorization header."
   /api/v1/ota/fw:
     post:
       summary: "Upload firmware (OTA)"
@@ -166,8 +246,18 @@ paths:
             application/json:
               schema:
                 type: "object"
+        401:
+          description: ""
+          content:
+            application/json:
+              schema:
+                type: "object"
       tags:
         - "OTA"
+      security:
+        - 
+          bearerAuth: []
+      description: "**Requires Authentication** - Upload firmware (OTA). This endpoint requires a valid bearer token in the Authorization header."
       requestBody:
         content:
           multipart/form-data:
@@ -185,8 +275,18 @@ paths:
             application/json:
               schema:
                 type: "object"
+        401:
+          description: ""
+          content:
+            application/json:
+              schema:
+                type: "object"
       tags:
         - "OTA"
+      security:
+        - 
+          bearerAuth: []
+      description: "**Requires Authentication** - Upload filesystem (OTA). This endpoint requires a valid bearer token in the Authorization header."
       requestBody:
         content:
           multipart/form-data:
@@ -204,8 +304,18 @@ paths:
             application/json:
               schema:
                 type: "object"
+        401:
+          description: ""
+          content:
+            application/json:
+              schema:
+                type: "object"
       tags:
         - "OTA"
+      security:
+        - 
+          bearerAuth: []
+      description: "**Requires Authentication** - Get OTA status. This endpoint requires a valid bearer token in the Authorization header."
   /api/v1/ota/cancel:
     post:
       summary: "Cancel OTA"
@@ -217,8 +327,18 @@ paths:
             application/json:
               schema:
                 type: "object"
+        401:
+          description: ""
+          content:
+            application/json:
+              schema:
+                type: "object"
       tags:
         - "OTA"
+      security:
+        - 
+          bearerAuth: []
+      description: "**Requires Authentication** - Cancel OTA. This endpoint requires a valid bearer token in the Authorization header."
   /api/v1/gif:
     post:
       summary: "Upload a GIF"
@@ -230,8 +350,18 @@ paths:
             application/json:
               schema:
                 type: "object"
+        401:
+          description: ""
+          content:
+            application/json:
+              schema:
+                type: "object"
       tags:
         - "GIF"
+      security:
+        - 
+          bearerAuth: []
+      description: "**Requires Authentication** - Upload a GIF. This endpoint requires a valid bearer token in the Authorization header."
       requestBody:
         content:
           multipart/form-data:
@@ -254,6 +384,12 @@ paths:
             application/json:
               schema:
                 type: "object"
+        401:
+          description: ""
+          content:
+            application/json:
+              schema:
+                type: "object"
         404:
           description: ""
           content:
@@ -262,6 +398,10 @@ paths:
                 type: "object"
       tags:
         - "GIF"
+      security:
+        - 
+          bearerAuth: []
+      description: "**Requires Authentication** - Delete a GIF by name. This endpoint requires a valid bearer token in the Authorization header."
       requestBody:
         content:
           application/json:
@@ -285,8 +425,18 @@ paths:
             application/json:
               schema:
                 type: "object"
+        401:
+          description: ""
+          content:
+            application/json:
+              schema:
+                type: "object"
       tags:
         - "GIF"
+      security:
+        - 
+          bearerAuth: []
+      description: "**Requires Authentication** - List GIFs. This endpoint requires a valid bearer token in the Authorization header."
   /api/v1/gif/play:
     post:
       summary: "Play a GIF by name"
@@ -304,6 +454,12 @@ paths:
             application/json:
               schema:
                 type: "object"
+        401:
+          description: ""
+          content:
+            application/json:
+              schema:
+                type: "object"
         404:
           description: ""
           content:
@@ -312,6 +468,10 @@ paths:
                 type: "object"
       tags:
         - "GIF"
+      security:
+        - 
+          bearerAuth: []
+      description: "**Requires Authentication** - Play a GIF by name. This endpoint requires a valid bearer token in the Authorization header."
       requestBody:
         content:
           application/json:
@@ -336,8 +496,18 @@ paths:
             application/json:
               schema:
                 type: "object"
+        401:
+          description: ""
+          content:
+            application/json:
+              schema:
+                type: "object"
       tags:
         - "GIF"
+      security:
+        - 
+          bearerAuth: []
+      description: "**Requires Authentication** - Stop GIF playback. This endpoint requires a valid bearer token in the Authorization header."
   /api/v1/token/check:
     get:
       summary: "Check bearer token validity"
