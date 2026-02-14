@@ -110,8 +110,25 @@ class APIHandler(SimpleHTTPRequestHandler):
 
 router = Router()
 
+def check_auth(h: APIHandler) -> bool:
+    auth = h.headers.get("Authorization", "")
+    expected = h.state.get("auth.token", "")
+    
+    if not auth.startswith("Bearer "):
+        h.json_response({"status": "error", "message": "Invalid or missing token"}, 401)
+        return False
+    
+    token = auth.replace("Bearer ", "", 1).strip()
+    if not expected or token != expected:
+        h.json_response({"status": "error", "message": "Invalid or missing token"}, 401)
+        return False
+    
+    return True
+
 @router.route("GET", "/api/v1/wifi/status")
 def wifi_status(h: APIHandler):
+    if not check_auth(h):
+        return
     time.sleep(h.state.get("d.getActionDelay", 0))
     h.json_response({
         "connected": h.state.get("wifi.connected"),
@@ -122,12 +139,16 @@ def wifi_status(h: APIHandler):
 
 @router.route("GET", "/api/v1/wifi/scan")
 def wifi_scan(h: APIHandler):
+    if not check_auth(h):
+        return
     time.sleep(h.state.get("d.getActionDelay", 0))
     h.json_response(h.state.get("wifi.networks"))
 
 
 @router.route("POST", "/api/v1/wifi/connect")
 def wifi_connect(h: APIHandler):
+    if not check_auth(h):
+        return
     data = h.read_json()
     if data is None:
         return h.json_response({"error": "invalid json"}, 400)
@@ -147,6 +168,8 @@ def wifi_connect(h: APIHandler):
 
 @router.route("GET", "/api/v1/ntp/status")
 def ntp_status(h: APIHandler):
+    if not check_auth(h):
+        return
     time.sleep(h.state.get("d.getActionDelay", 0))
     h.json_response({
         "lastOk": h.state.get("ntp.lastOk"),
@@ -157,12 +180,16 @@ def ntp_status(h: APIHandler):
 
 @router.route("GET", "/api/v1/ntp/config")
 def ntp_config_get(h: APIHandler):
+    if not check_auth(h):
+        return
     time.sleep(h.state.get("d.getActionDelay", 0))
     h.json_response({"ntp_server": h.state.get("ntp.server")})
 
 
 @router.route("POST", "/api/v1/ntp/config")
 def ntp_config_set(h: APIHandler):
+    if not check_auth(h):
+        return
     data = h.read_json()
     if data is None:
         return h.json_response({"error": "invalid json"}, 400)
@@ -174,6 +201,8 @@ def ntp_config_set(h: APIHandler):
 
 @router.route("POST", "/api/v1/ntp/sync")
 def ntp_sync(h: APIHandler):
+    if not check_auth(h):
+        return
     h.state.update({
         "ntp.lastStatus": "syncing",
         "ntp.lastSyncTime": time.time(),
@@ -184,6 +213,8 @@ def ntp_sync(h: APIHandler):
 
 @router.route("GET", "/api/v1/ota/status")
 def ota_status(h: APIHandler):
+    if not check_auth(h):
+        return
     time.sleep(h.state.get("d.getActionDelay", 0))
     h.json_response({
         "inProgress": h.state.get("ota.inProgress"),
@@ -197,6 +228,8 @@ def ota_status(h: APIHandler):
 @router.route("POST", "/api/v1/ota/fw")
 @router.route("POST", "/api/v1/ota/fs")
 def ota_start(h: APIHandler):
+    if not check_auth(h):
+        return
     total = int(h.headers.get("Content-Length", 0))
     h.state.update({
         "ota.inProgress": True,
@@ -210,6 +243,8 @@ def ota_start(h: APIHandler):
 
 @router.route("POST", "/api/v1/ota/cancel")
 def ota_cancel(h: APIHandler):
+    if not check_auth(h):
+        return
     h.state.update({
         "ota.inProgress": False,
         "ota.error": True,
@@ -220,12 +255,16 @@ def ota_cancel(h: APIHandler):
 
 @router.route("GET", "/api/v1/gif")
 def gif_list(h: APIHandler):
+    if not check_auth(h):
+        return
     time.sleep(h.state.get("d.getActionDelay", 0))
     h.json_response(h.state.get("gif.list"))
 
 
 @router.route("POST", "/api/v1/gif")
 def gif_upload(h: APIHandler):
+    if not check_auth(h):
+        return
     data = h.read_json()
     name = data.get("name", "uploaded.gif") if data else "uploaded.gif"
     h.json_response({"status": "success", "filename": name})
@@ -233,6 +272,8 @@ def gif_upload(h: APIHandler):
 
 @router.route("DELETE", "/api/v1/gif")
 def gif_delete(h: APIHandler):
+    if not check_auth(h):
+        return
     data = h.read_json()
     if not data or "name" not in data:
         return h.json_response({"error": "missing name"}, 400)
@@ -241,6 +282,8 @@ def gif_delete(h: APIHandler):
 
 @router.route("POST", "/api/v1/gif/play")
 def gif_play(h: APIHandler):
+    if not check_auth(h):
+        return
     data = h.read_json()
     if not data:
         return h.json_response({"error": "invalid json"}, 400)
@@ -250,12 +293,16 @@ def gif_play(h: APIHandler):
 
 @router.route("POST", "/api/v1/gif/stop")
 def gif_stop(h: APIHandler):
+    if not check_auth(h):
+        return
     h.state.set("gif.playing", None)
     h.json_response({"status": "stopped"})
 
 
 @router.route("POST", "/api/v1/reboot")
 def reboot(h: APIHandler):
+    if not check_auth(h):
+        return
     h.json_response({"status": "rebooting"})
 
 
