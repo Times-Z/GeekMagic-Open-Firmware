@@ -31,6 +31,7 @@
 #include "web/Webserver.h"
 #include "web/Api.h"
 #include "ntp/NTPClient.h"
+#include "boot/RescueMode.h"
 #include <array>
 
 ConfigManager configManager;
@@ -112,17 +113,22 @@ void setup() {
 
     SecureStorage::setSalt(KV_SALT_STR);
 
-    step++;
-
     if (configManager.secure.begin()) {
         Logger::info("SecureStorage initialized successfully", "ConfigManager");
     }
 
-    step++;
-
     if (configManager.load()) {
         Logger::info("Configuration loaded successfully");
     }
+
+    if (RescueMode::checkBootLoop()) {
+        RescueMode::run();
+        EspClass::wdtEnable(WDTO_2S);
+
+        return;
+    }
+
+    step += 2;
 
     DisplayManager::begin();
 
@@ -175,6 +181,17 @@ void setup() {
 }
 
 void loop() {
+    if (RescueMode::isActive()) {
+        RescueMode::loop();
+        return;
+    }
+
+    static bool bootStableMarked = false;
+    if (!bootStableMarked && millis() >= BOOT_STABLE_MS) {
+        RescueMode::markBootStable();
+        bootStableMarked = true;
+    }
+
     if (webserver != nullptr) {
         webserver->handleClient();
     }
