@@ -32,7 +32,12 @@
 #include "web/Api.h"
 #include "ntp/NTPClient.h"
 #include "boot/RescueMode.h"
+#include "dashboard/DashboardManager.h"
 #include <array>
+
+#ifndef METRICS_URL
+#define METRICS_URL ""
+#endif
 
 ConfigManager configManager;
 const char* AP_SSID = "GeekMagic";
@@ -50,6 +55,7 @@ static constexpr int LOADING_BAR_TEXT_X = 50;
 static constexpr int LOADING_BAR_TEXT_Y = 80;
 static constexpr int LOADING_BAR_Y = 110;
 static constexpr int LOADING_DELAY_MS = 1000;
+static constexpr const char* METRICS_ENDPOINT = METRICS_URL;
 
 Webserver* webserver = nullptr;
 NTPClient* ntpClient = nullptr;
@@ -175,6 +181,10 @@ void setup() {
 
     DisplayManager::drawStartup(wifiManager->getIP().toString());
 
+    if (METRICS_ENDPOINT[0] != '\0' && wifiManager->isConnected() && !wifiManager->isApMode()) {
+        DashboardManager::begin(METRICS_ENDPOINT);
+    }
+
     // enable watchdog before going to loop()
     // 2 seconds should be way more than the main loop needs to do stuff
     EspClass::wdtEnable(WDTO_2S);
@@ -201,6 +211,11 @@ void loop() {
     }
 
     DisplayManager::update();
+
+    if (METRICS_ENDPOINT[0] != '\0' && wifiManager != nullptr && wifiManager->isConnected() &&
+        !wifiManager->isApMode()) {
+        DashboardManager::update();
+    }
 
     static unsigned long last_free_heap_log = 0;
     static constexpr unsigned long FREE_HEAP_LOG_INTERVAL_MS = 10000UL;
