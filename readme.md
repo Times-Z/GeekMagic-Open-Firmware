@@ -413,17 +413,7 @@ This project is licensed under the **GPLv3 License** - see the [LICENSE](LICENSE
 
 ---
 
-<div align="center">
-    <a href="https://www.star-history.com/?repos=Times-Z%2FGeekMagic-Open-Firmware&type=date&legend=top-left">
-    <picture>
-    <source media="(prefers-color-scheme: dark)" srcset="https://api.star-history.com/chart?repos=Times-Z/GeekMagic-Open-Firmware&type=date&theme=dark&legend=top-left" />
-    <source media="(prefers-color-scheme: light)" srcset="https://api.star-history.com/chart?repos=Times-Z/GeekMagic-Open-Firmware&type=date&legend=top-left" />
-    <img alt="Star History Chart" src="https://api.star-history.com/chart?repos=Times-Z/GeekMagic-Open-Firmware&type=date&legend=top-left" />
-    </picture>
-    </a>
-</div>
-
----
+[![Star History Chart](https://api.star-history.com/chart?repos=Times-Z/GeekMagic-Open-Firmware&type=date&legend=top-left&sealed_token=buxLfad0axezhj4CBo-209-3uuGl-RdDs3GnxzazLXo6LEKvVSC0m2WdyYXNRYRUT5zGjinyTTCA1u2plLL7-D_VTy2KLecqgHvL2JEhJ5TeYNwGu-IGo3mwc0BLQih49j31ntRtZgbz4uGzOd-Wn2QJUT2UZIzIPFhZxBvkYWeH3woN1jvXikoVEV22)](https://www.star-history.com/?repos=Times-Z%2FGeekMagic-Open-Firmware&type=date&legend=top-left)
 
 <div align="center">
 
