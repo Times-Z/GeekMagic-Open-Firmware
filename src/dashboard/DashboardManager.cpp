@@ -154,16 +154,16 @@ auto fetchMetrics() -> bool {
     JsonDocument doc;
     const DeserializationError error = deserializeJson(doc, http.getStream());
     http.end();
-    if (error || !doc["ok"].as<bool>()) {
-        return false;
+    const bool responseOk = !error && doc["ok"].as<bool>();
+    if (responseOk) {
+        data.gpuUsage = doc["gpu_usage"] | 0.0F;
+        data.cpuUsage = doc["cpu_usage"] | 0.0F;
+        data.gpuVramMb = doc["gpu_vram_mb"] | 0.0F;
+        data.memoryUsedGb = doc["memory_used_gb"] | 0.0F;
+        data.gpuPower = doc["gpu_power"] | 0.0F;
+        data.gpuTemp = doc["gpu_temp_c"] | 0.0F;
     }
-    data.gpuUsage = doc["gpu_usage"] | 0.0F;
-    data.cpuUsage = doc["cpu_usage"] | 0.0F;
-    data.gpuVramMb = doc["gpu_vram_mb"] | 0.0F;
-    data.memoryUsedGb = doc["memory_used_gb"] | 0.0F;
-    data.gpuPower = doc["gpu_power"] | 0.0F;
-    data.gpuTemp = doc["gpu_temp_c"] | 0.0F;
-    return true;
+    return responseOk;
 }
 }  // namespace
 
