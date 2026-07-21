@@ -421,6 +421,32 @@ This project is licensed under the **GPLv3 License** - see the [LICENSE](LICENSE
 
 [Star us on GitHub](https://github.com/Times-Z/GeekMagic-Open-Firmware.git) if you find this project useful !
 
+## Optional system metrics dashboard
+
+The firmware can display a compact six-value PC metrics dashboard instead of the normal content loop. It is disabled by default, so existing builds keep their current behavior.
+
+Enable it by appending `METRICS_URL` to the existing `build_flags` in `platformio.ini`:
+
+```ini
+-DMETRICS_URL=\"http://192.168.1.10:8765/metrics\"
+```
+
+The endpoint is polled once per second and must return JSON with these fields:
+
+```json
+{
+  "ok": true,
+  "gpu_usage": 28,
+  "cpu_usage": 24,
+  "gpu_vram_mb": 6930,
+  "memory_used_gb": 36.8,
+  "gpu_power": 45,
+  "gpu_temp_c": 50
+}
+```
+
+Only changed value regions are redrawn, preventing the full-screen flash that would otherwise occur during one-second updates. If the endpoint or Wi-Fi is unavailable, the display shows `PC OFFLINE`.
+
 This project took me a lot of time !
 
 </div>
