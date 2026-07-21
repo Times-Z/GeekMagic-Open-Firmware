@@ -181,7 +181,7 @@ void setup() {
 
     DisplayManager::drawStartup(wifiManager->getIP().toString());
 
-    if (METRICS_ENDPOINT[0] != '\0' && wifiManager->isConnected() && !wifiManager->isApMode()) {
+    if (METRICS_ENDPOINT[0] != '\0' && WiFiManager::isConnected() && !wifiManager->isApMode()) {
         DashboardManager::begin(METRICS_ENDPOINT);
     }
 
@@ -212,7 +212,7 @@ void loop() {
 
     DisplayManager::update();
 
-    if (METRICS_ENDPOINT[0] != '\0' && wifiManager != nullptr && wifiManager->isConnected() &&
+    if (METRICS_ENDPOINT[0] != '\0' && wifiManager != nullptr && WiFiManager::isConnected() &&
         !wifiManager->isApMode()) {
         DashboardManager::update();
     }
