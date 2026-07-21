@@ -4,14 +4,7 @@
   ],
   "plugins": [
     "@semantic-release/commit-analyzer",
-    [
-      "@semantic-release/release-notes-generator",
-      {
-        "writerOpts": {
-          "commitPartial": "* {{header}} ({{authorName}})\n"
-        }
-      }
-    ],
+    "@semantic-release/release-notes-generator",
     [
       "@semantic-release/github",
       {
